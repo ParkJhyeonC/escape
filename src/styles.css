@@ -1,0 +1,332 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  background:
+    radial-gradient(circle at top, rgba(98, 65, 177, 0.45), transparent 30%),
+    linear-gradient(180deg, #161222 0%, #090b12 100%);
+  color: #f4f0ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9f7aea, #6b46c1);
+  color: white;
+  cursor: pointer;
+  padding: 0.85rem 1.25rem;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+input {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 10, 18, 0.7);
+  color: white;
+}
+
+#app {
+  width: 100%;
+}
+
+.app-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.2rem 4rem;
+}
+
+.hero-card,
+.panel,
+.puzzle-card {
+  background: rgba(13, 16, 29, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(20px);
+}
+
+.hero-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: center;
+  border-radius: 28px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #c4b5fd;
+  font-size: 0.8rem;
+  margin: 0 0 0.6rem;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  margin-bottom: 0.7rem;
+}
+
+.subtitle {
+  max-width: 62ch;
+  color: #d8d3ec;
+  margin-bottom: 0;
+}
+
+.timer-panel {
+  min-width: 260px;
+  text-align: right;
+}
+
+.timer-panel span {
+  display: block;
+  color: #d4c6ff;
+  margin-bottom: 0.45rem;
+}
+
+.timer-panel strong {
+  display: block;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  margin-bottom: 1rem;
+}
+
+.timer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.panel {
+  border-radius: 24px;
+  padding: 1.4rem;
+}
+
+.story-panel,
+.status-panel,
+.inventory-panel,
+.timeline-panel,
+.hints-panel,
+.finale-panel {
+  grid-column: span 4;
+}
+
+.puzzles-panel {
+  grid-column: 1 / -1;
+}
+
+.callout {
+  border-radius: 20px;
+  padding: 1rem;
+  background: rgba(159, 122, 234, 0.12);
+  border: 1px solid rgba(196, 181, 253, 0.18);
+  margin-top: 1rem;
+}
+
+.callout.bonus {
+  background: rgba(66, 153, 225, 0.12);
+  border-color: rgba(144, 205, 244, 0.24);
+}
+
+.status-list,
+.inventory-list,
+.hint-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.status-list li,
+.hint-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.status-list li:last-child,
+.hint-list li:last-child {
+  border-bottom: none;
+}
+
+.inventory-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.inventory-list li,
+.badge {
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.timeline-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.timeline-item {
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.timeline-item span,
+.puzzle-step {
+  color: #d4c6ff;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.puzzle-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.puzzle-card {
+  border-radius: 24px;
+  padding: 1.4rem;
+}
+
+.puzzle-card.solved {
+  outline: 1px solid rgba(72, 187, 120, 0.55);
+}
+
+.puzzle-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.clue-box {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.clue-box ul {
+  margin: 0.6rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.team-hint,
+.reward-text {
+  color: #dbd8ea;
+}
+
+.solve-button {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.ending {
+  border-radius: 20px;
+  padding: 1rem;
+}
+
+.ending.success {
+  background: rgba(72, 187, 120, 0.15);
+}
+
+.ending.fail {
+  background: rgba(245, 101, 101, 0.15);
+}
+
+.ending.neutral {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 1100px) {
+  .story-panel,
+  .status-panel,
+  .inventory-panel,
+  .timeline-panel,
+  .hints-panel,
+  .finale-panel {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 780px) {
+  .app-shell {
+    padding-inline: 0.9rem;
+  }
+
+  .hero-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .timer-panel {
+    width: 100%;
+    text-align: left;
+  }
+
+  .timer-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .story-panel,
+  .status-panel,
+  .inventory-panel,
+  .timeline-panel,
+  .hints-panel,
+  .finale-panel,
+  .puzzles-panel {
+    grid-column: 1 / -1;
+  }
+}
