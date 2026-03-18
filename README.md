@@ -26,7 +26,8 @@ npm run dev
 
 1. Node.js LTS를 설치합니다.
 2. 프로젝트 루트에서 `run-server.bat`를 실행합니다.
-3. 브라우저에서 `http://localhost:4173` 으로 접속합니다.
+3. 배치 파일은 Windows 콘솔 인코딩 문제를 피하기 위해 ASCII 메시지만 출력합니다.
+4. 브라우저에서 `http://localhost:4173` 으로 접속합니다.
 
 ## 게임 구성
 
