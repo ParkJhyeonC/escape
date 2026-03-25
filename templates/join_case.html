@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 {% block content %}
 <section class="card">
-  <h2>사례번호 기반 접속</h2>
+  <h2>사례번호 접속 (부장/협력교사)</h2>
   <form method="post" class="inline-form">
     <label>사례번호 <input name="case_number" placeholder="2026-JD-001" required></label>
-    <button type="submit">접속</button>
+    <button type="submit">사례 열기</button>
   </form>
-  <p class="helper">실무 버전에서는 사례번호 + 생년월일 일부 등 2차 확인을 추가할 수 있습니다.</p>
+  <p class="helper">접속 후 부서(교무/생활안전/진로/보건/상담/복지)별 지원방향을 입력할 수 있습니다.</p>
 </section>
 {% endblock %}

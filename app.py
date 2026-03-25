@@ -46,6 +46,16 @@ RISK_OPTIONS = [
     "복합위기",
 ]
 
+DEPARTMENT_OPTIONS = [
+    "교무부",
+    "생활안전부",
+    "창의인성부",
+    "진로진학부",
+    "보건",
+    "전문상담",
+    "복지",
+]
+
 
 def get_db() -> sqlite3.Connection:
     if "db" not in g:
@@ -65,6 +75,18 @@ def init_db() -> None:
     db = sqlite3.connect(DB_PATH)
     db.executescript(
         """
+        CREATE TABLE IF NOT EXISTS discoveries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_name TEXT NOT NULL,
+            grade INTEGER NOT NULL,
+            class_no INTEGER NOT NULL,
+            homeroom_teacher TEXT NOT NULL,
+            risk_type TEXT NOT NULL,
+            urgency TEXT NOT NULL,
+            note TEXT,
+            created_at TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS cases (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             case_number TEXT UNIQUE NOT NULL,
@@ -98,6 +120,16 @@ def init_db() -> None:
             created_at TEXT NOT NULL,
             FOREIGN KEY(case_id) REFERENCES cases(id)
         );
+
+        CREATE TABLE IF NOT EXISTS support_directions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            case_id INTEGER NOT NULL,
+            department TEXT NOT NULL,
+            author TEXT NOT NULL,
+            direction_text TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(case_id) REFERENCES cases(id)
+        );
         """
     )
     db.commit()
@@ -119,6 +151,11 @@ def generate_case_number() -> str:
 
 
 @app.route("/")
+def home() -> str:
+    return render_template("home.html")
+
+
+@app.route("/admin")
 def dashboard() -> str:
     db = get_db()
     cases = db.execute(
@@ -130,7 +167,41 @@ def dashboard() -> str:
         ).fetchone()["cnt"]
         for status in STATUS_OPTIONS
     }
-    return render_template("dashboard.html", cases=cases, stats=stats)
+    discoveries = db.execute(
+        "SELECT * FROM discoveries ORDER BY datetime(created_at) DESC LIMIT 10"
+    ).fetchall()
+    return render_template("dashboard.html", cases=cases, stats=stats, discoveries=discoveries)
+
+
+@app.route("/homeroom", methods=["GET", "POST"])
+def homeroom_page() -> str:
+    db = get_db()
+    if request.method == "POST":
+        db.execute(
+            """
+            INSERT INTO discoveries
+            (student_name, grade, class_no, homeroom_teacher, risk_type, urgency, note, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                request.form["student_name"],
+                int(request.form["grade"]),
+                int(request.form["class_no"]),
+                request.form["homeroom_teacher"],
+                request.form["risk_type"],
+                request.form["urgency"],
+                request.form.get("note", ""),
+                datetime.now().isoformat(timespec="seconds"),
+            ),
+        )
+        db.commit()
+        flash("담임교사 발견 보고가 접수되었습니다.")
+        return redirect(url_for("homeroom_page"))
+
+    reports = db.execute(
+        "SELECT * FROM discoveries ORDER BY datetime(created_at) DESC LIMIT 20"
+    ).fetchall()
+    return render_template("homeroom.html", risk_options=RISK_OPTIONS, reports=reports)
 
 
 @app.route("/cases/new", methods=["GET", "POST"])
@@ -162,7 +233,10 @@ def new_case() -> str:
         return redirect(url_for("dashboard"))
 
     return render_template(
-        "new_case.html", risk_options=RISK_OPTIONS, urgency_options=["일반", "주의", "긴급"]
+        "new_case.html",
+        risk_options=RISK_OPTIONS,
+        urgency_options=["일반", "주의", "긴급"],
+        department_options=DEPARTMENT_OPTIONS,
     )
 
 
@@ -172,7 +246,7 @@ def case_detail(case_number: str) -> str:
     case = db.execute("SELECT * FROM cases WHERE case_number = ?", (case_number,)).fetchone()
     if not case:
         flash("해당 사례를 찾을 수 없습니다.")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("join_case"))
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -215,6 +289,22 @@ def case_detail(case_number: str) -> str:
             )
             db.commit()
             flash("기록이 저장되었습니다.")
+        elif action == "add_direction":
+            db.execute(
+                """
+                INSERT INTO support_directions (case_id, department, author, direction_text, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    case["id"],
+                    request.form["department"],
+                    request.form["author"],
+                    request.form["direction_text"],
+                    datetime.now().isoformat(timespec="seconds"),
+                ),
+            )
+            db.commit()
+            flash("부서 지원방향이 등록되었습니다.")
         return redirect(url_for("case_detail", case_number=case_number))
 
     assignments = db.execute(
@@ -223,13 +313,19 @@ def case_detail(case_number: str) -> str:
     records = db.execute(
         "SELECT * FROM records WHERE case_id = ? ORDER BY datetime(created_at) DESC", (case["id"],)
     ).fetchall()
+    directions = db.execute(
+        "SELECT * FROM support_directions WHERE case_id = ? ORDER BY datetime(created_at) DESC",
+        (case["id"],),
+    ).fetchall()
     return render_template(
         "case_detail.html",
         case=case,
         assignments=assignments,
         records=records,
+        directions=directions,
         status_options=STATUS_OPTIONS,
         role_options=ROLE_OPTIONS,
+        department_options=DEPARTMENT_OPTIONS,
     )
 
 
@@ -238,7 +334,7 @@ def join_case() -> str:
     if request.method == "POST":
         case_number = request.form["case_number"].strip().upper()
         return redirect(url_for("case_detail", case_number=case_number))
-    return render_template("join_case.html")
+    return render_template("join_case.html", department_options=DEPARTMENT_OPTIONS)
 
 
 if __name__ == "__main__":

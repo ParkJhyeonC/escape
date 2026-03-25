@@ -7,7 +7,14 @@
     <label>학년 <input type="number" name="grade" min="1" max="6" required></label>
     <label>반 <input type="number" name="class_no" min="1" max="20" required></label>
     <label>담임교사 <input name="homeroom_teacher"></label>
-    <label>주관 부서 <input name="owner_department" placeholder="예: 생활안전부"></label>
+
+    <label>주관 부서
+      <select name="owner_department">
+        {% for d in department_options %}
+          <option value="{{ d }}">{{ d }}</option>
+        {% endfor %}
+      </select>
+    </label>
 
     <label>발견 유형
       <select name="risk_type" required>

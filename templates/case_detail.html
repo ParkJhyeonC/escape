@@ -44,6 +44,40 @@
   </table>
 </section>
 
+
+<section class="card">
+  <h3>부서별 지원방향 작성</h3>
+  <form method="post" class="form-grid">
+    <input type="hidden" name="action" value="add_direction">
+    <label>부서
+      <select name="department">
+        {% for d in department_options %}
+          <option value="{{ d }}">{{ d }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>작성자 <input name="author" required></label>
+    <label class="full">지원방향 <textarea name="direction_text" rows="3" required></textarea></label>
+    <button type="submit">지원방향 저장</button>
+  </form>
+
+  <table>
+    <thead><tr><th>부서</th><th>작성자</th><th>지원방향</th><th>등록일</th></tr></thead>
+    <tbody>
+      {% for d in directions %}
+      <tr>
+        <td>{{ d.department }}</td>
+        <td>{{ d.author }}</td>
+        <td>{{ d.direction_text }}</td>
+        <td>{{ d.created_at[:10] }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">등록된 부서 지원방향이 없습니다.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
 <section class="card">
   <h3>기록 입력</h3>
   <form method="post" class="form-grid">

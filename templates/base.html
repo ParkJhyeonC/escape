@@ -7,13 +7,16 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
-  <header>
-    <h1>학생맞춤통합지원 협업 웹앱</h1>
-    <nav>
-      <a href="{{ url_for('dashboard') }}">대시보드</a>
-      <a href="{{ url_for('new_case') }}">사례 생성</a>
-      <a href="{{ url_for('join_case') }}">사례번호 접속</a>
-    </nav>
+  <header class="top-header">
+    <div class="header-inner">
+      <h1>학생맞춤통합지원 협업 웹앱</h1>
+      <nav>
+        <a href="{{ url_for('home') }}">홈</a>
+        <a href="{{ url_for('homeroom_page') }}">담임교사 페이지</a>
+        <a href="{{ url_for('dashboard') }}">관리자 페이지</a>
+        <a href="{{ url_for('join_case') }}">사례번호 접속</a>
+      </nav>
+    </div>
   </header>
 
   <main>
