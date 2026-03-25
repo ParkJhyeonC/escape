@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="card">
+  <h2>상태별 현황</h2>
+  <div class="stats-grid">
+    {% for status, count in stats.items() %}
+      <div><strong>{{ status }}</strong><span>{{ count }}건</span></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <h2>최근 사례</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>사례번호</th><th>학생</th><th>위험유형</th><th>긴급도</th><th>상태</th><th>생성일</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in cases %}
+      <tr>
+        <td><a href="{{ url_for('case_detail', case_number=c.case_number) }}">{{ c.case_number }}</a></td>
+        <td>{{ c.grade }}학년 {{ c.class_no }}반 {{ c.student_name }}</td>
+        <td>{{ c.risk_type }}</td>
+        <td>{{ c.urgency }}</td>
+        <td>{{ c.status }}</td>
+        <td>{{ c.created_at[:10] }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">아직 사례가 없습니다.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

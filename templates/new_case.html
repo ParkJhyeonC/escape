@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="card">
+  <h2>새 학생 케이스 생성</h2>
+  <form method="post" class="form-grid">
+    <label>학생 이름 <input name="student_name" required></label>
+    <label>학년 <input type="number" name="grade" min="1" max="6" required></label>
+    <label>반 <input type="number" name="class_no" min="1" max="20" required></label>
+    <label>담임교사 <input name="homeroom_teacher"></label>
+    <label>주관 부서 <input name="owner_department" placeholder="예: 생활안전부"></label>
+
+    <label>발견 유형
+      <select name="risk_type" required>
+        {% for risk in risk_options %}
+          <option value="{{ risk }}">{{ risk }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>긴급도
+      <select name="urgency" required>
+        {% for urgency in urgency_options %}
+          <option value="{{ urgency }}">{{ urgency }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <button type="submit">사례 생성</button>
+  </form>
+</section>
+{% endblock %}

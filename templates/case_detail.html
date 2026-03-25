@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="card">
+  <h2>{{ case.case_number }} / {{ case.grade }}학년 {{ case.class_no }}반 {{ case.student_name }}</h2>
+  <p>위험유형: {{ case.risk_type }} | 긴급도: {{ case.urgency }} | 주관부서: {{ case.owner_department }}</p>
+
+  <form method="post" class="inline-form">
+    <input type="hidden" name="action" value="update_status">
+    <label>상태 변경
+      <select name="status">
+        {% for s in status_options %}
+          <option value="{{ s }}" {% if s == case.status %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button>저장</button>
+  </form>
+</section>
+
+<section class="card">
+  <h3>역할 분담</h3>
+  <form method="post" class="form-grid">
+    <input type="hidden" name="action" value="add_assignment">
+    <label>역할
+      <select name="role_name">
+        {% for role in role_options %}
+          <option value="{{ role }}">{{ role }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>담당자 <input name="assignee" placeholder="홍길동"></label>
+    <label>마감기한 <input type="date" name="due_date"></label>
+    <button type="submit">추가</button>
+  </form>
+  <table>
+    <thead><tr><th>역할</th><th>담당자</th><th>마감기한</th><th>상태</th></tr></thead>
+    <tbody>
+      {% for a in assignments %}
+        <tr><td>{{ a.role_name }}</td><td>{{ a.assignee }}</td><td>{{ a.due_date }}</td><td>{{ a.task_status }}</td></tr>
+      {% else %}
+        <tr><td colspan="4">등록된 역할 분담이 없습니다.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h3>기록 입력</h3>
+  <form method="post" class="form-grid">
+    <input type="hidden" name="action" value="add_record">
+    <label>기록 유형
+      <select name="record_type">
+        <option>상담 기록</option>
+        <option>관찰 기록</option>
+        <option>보호자 통화 기록</option>
+        <option>회의록</option>
+        <option>외부기관 연계 기록</option>
+        <option>조치 결과 기록</option>
+        <option>사후 점검 기록</option>
+      </select>
+    </label>
+    <label>작성자 <input name="author" required></label>
+    <label class="full">내용 <textarea name="body" rows="4" required></textarea></label>
+    <button type="submit">기록 저장</button>
+  </form>
+
+  <ul class="record-list">
+    {% for r in records %}
+      <li>
+        <strong>{{ r.record_type }}</strong> - {{ r.author }} ({{ r.created_at.replace('T', ' ') }})
+        <p>{{ r.body }}</p>
+      </li>
+    {% else %}
+      <li>기록이 없습니다.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
