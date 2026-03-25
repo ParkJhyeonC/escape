@@ -1,60 +1,31 @@
 {% extends 'base.html' %}
 {% block content %}
-<section class="card">
+<section class="card print-header">
   <h2>{{ case.case_number }} / {{ case.grade }}학년 {{ case.class_no }}반 {{ case.student_name }}</h2>
   <p>위험유형: {{ case.risk_type }} | 긴급도: {{ case.urgency }} | 주관부서: {{ case.owner_department }}</p>
 
-  <form method="post" class="inline-form">
-    <input type="hidden" name="action" value="update_status">
-    <label>상태 변경
-      <select name="status">
-        {% for s in status_options %}
-          <option value="{{ s }}" {% if s == case.status %}selected{% endif %}>{{ s }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <button>저장</button>
-  </form>
+  <div class="inline-form print-hide">
+    <form method="post" class="inline-form">
+      <input type="hidden" name="action" value="update_status">
+      <label>상태 변경
+        <select name="status">
+          {% for s in status_options %}
+            <option value="{{ s }}" {% if s == case.status %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button>저장</button>
+    </form>
+    <button type="button" onclick="window.print()">인쇄하기</button>
+  </div>
 </section>
-
-<section class="card">
-  <h3>역할 분담</h3>
-  <form method="post" class="form-grid">
-    <input type="hidden" name="action" value="add_assignment">
-    <label>역할
-      <select name="role_name">
-        {% for role in role_options %}
-          <option value="{{ role }}">{{ role }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <label>담당자 <input name="assignee" placeholder="홍길동"></label>
-    <label>마감기한 <input type="date" name="due_date"></label>
-    <button type="submit">추가</button>
-  </form>
-  <table>
-    <thead><tr><th>역할</th><th>담당자</th><th>마감기한</th><th>상태</th></tr></thead>
-    <tbody>
-      {% for a in assignments %}
-        <tr><td>{{ a.role_name }}</td><td>{{ a.assignee }}</td><td>{{ a.due_date }}</td><td>{{ a.task_status }}</td></tr>
-      {% else %}
-        <tr><td colspan="4">등록된 역할 분담이 없습니다.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
-
 
 <section class="card">
   <h3>부서별 지원방향 작성</h3>
-  <form method="post" class="form-grid">
+  <form method="post" class="form-grid print-hide">
     <input type="hidden" name="action" value="add_direction">
-    <label>부서
-      <select name="department">
-        {% for d in department_options %}
-          <option value="{{ d }}">{{ d }}</option>
-        {% endfor %}
-      </select>
+    <label>부서 (선택)
+      <input name="department" placeholder="공란 가능">
     </label>
     <label>작성자 <input name="author" required></label>
     <label class="full">지원방향 <textarea name="direction_text" rows="3" required></textarea></label>
@@ -66,7 +37,7 @@
     <tbody>
       {% for d in directions %}
       <tr>
-        <td>{{ d.department }}</td>
+        <td>{{ d.department or '-' }}</td>
         <td>{{ d.author }}</td>
         <td>{{ d.direction_text }}</td>
         <td>{{ d.created_at[:10] }}</td>
@@ -80,7 +51,7 @@
 
 <section class="card">
   <h3>기록 입력</h3>
-  <form method="post" class="form-grid">
+  <form method="post" class="form-grid print-hide">
     <input type="hidden" name="action" value="add_record">
     <label>기록 유형
       <select name="record_type">

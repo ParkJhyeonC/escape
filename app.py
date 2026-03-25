@@ -198,10 +198,7 @@ def homeroom_page() -> str:
         flash("담임교사 발견 보고가 접수되었습니다.")
         return redirect(url_for("homeroom_page"))
 
-    reports = db.execute(
-        "SELECT * FROM discoveries ORDER BY datetime(created_at) DESC LIMIT 20"
-    ).fetchall()
-    return render_template("homeroom.html", risk_options=RISK_OPTIONS, reports=reports)
+    return render_template("homeroom.html", risk_options=RISK_OPTIONS)
 
 
 @app.route("/cases/new", methods=["GET", "POST"])
@@ -257,22 +254,6 @@ def case_detail(case_number: str) -> str:
             )
             db.commit()
             flash("상태가 변경되었습니다.")
-        elif action == "add_assignment":
-            db.execute(
-                """
-                INSERT INTO assignments (case_id, role_name, assignee, due_date, task_status)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    case["id"],
-                    request.form["role_name"],
-                    request.form.get("assignee", ""),
-                    request.form.get("due_date", ""),
-                    "요청됨",
-                ),
-            )
-            db.commit()
-            flash("역할 분담이 추가되었습니다.")
         elif action == "add_record":
             db.execute(
                 """
@@ -307,9 +288,6 @@ def case_detail(case_number: str) -> str:
             flash("부서 지원방향이 등록되었습니다.")
         return redirect(url_for("case_detail", case_number=case_number))
 
-    assignments = db.execute(
-        "SELECT * FROM assignments WHERE case_id = ? ORDER BY id DESC", (case["id"],)
-    ).fetchall()
     records = db.execute(
         "SELECT * FROM records WHERE case_id = ? ORDER BY datetime(created_at) DESC", (case["id"],)
     ).fetchall()
@@ -320,7 +298,6 @@ def case_detail(case_number: str) -> str:
     return render_template(
         "case_detail.html",
         case=case,
-        assignments=assignments,
         records=records,
         directions=directions,
         status_options=STATUS_OPTIONS,

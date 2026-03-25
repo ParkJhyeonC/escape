@@ -1,21 +1,8 @@
 {% extends 'base.html' %}
 {% block content %}
-<section class="hero card">
-  <h2>역할별로 바로 시작하세요</h2>
-  <p>학생 발견(담임), 운영/승인(관리자), 사례번호 기반 협업(부장/협력교사)을 분리해 접근할 수 있습니다.</p>
-  <div class="quick-grid">
-    <a class="quick-card" href="{{ url_for('homeroom_page') }}">
-      <h3>담임교사 페이지</h3>
-      <p>위기 징후 발견 보고를 등록하고 최근 제보를 확인합니다.</p>
-    </a>
-    <a class="quick-card" href="{{ url_for('dashboard') }}">
-      <h3>관리자 페이지</h3>
-      <p>사례 현황, 통계, 최근 발견 보고를 보고 사례를 생성합니다.</p>
-    </a>
-    <a class="quick-card" href="{{ url_for('join_case') }}">
-      <h3>사례번호 접속 페이지</h3>
-      <p>부서별 지원방향과 조치 기록을 사례번호 기준으로 입력합니다.</p>
-    </a>
-  </div>
+<section class="home-grid-only">
+  <a class="home-tile" href="{{ url_for('homeroom_page') }}">담임교사 페이지</a>
+  <a class="home-tile" href="{{ url_for('join_case') }}">부장님용 사례번호 접속 페이지</a>
+  <a class="home-tile" href="{{ url_for('dashboard') }}">관리자 페이지</a>
 </section>
 {% endblock %}
