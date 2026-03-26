@@ -126,10 +126,12 @@
       <section id="home" class="panel hidden" aria-label="메인 버튼">
         <div class="panel-head">
           <h2>메인</h2>
-          <button type="button" class="ghost" id="user-logout">로그아웃</button>
+          <div class="head-actions">
+            <button type="button" class="ghost" id="edit-role">직책정보 수정</button>
+            <button type="button" class="ghost" id="user-logout">로그아웃</button>
+          </div>
         </div>
         <p id="logged-user" class="subtitle-small"></p>
-        <button type="button" class="ghost" id="edit-role">직책정보 수정</button>
         <div class="home-actions">
           <button class="action-button" data-target="report">담임교사용 제보 버튼</button>
           <button class="action-button" data-target="case-access">각 부서 사례번호 입력 버튼</button>
@@ -153,6 +155,33 @@
               <input type="number" min="1" max="20" name="classNumber" required />
             </label>
           </div>
+
+          <label>
+            가족 유형
+            <input type="text" name="familyType" placeholder="예: 한부모, 조손, 다자녀, 일반" />
+          </label>
+          <div class="field-grid two">
+            <label>
+              다문화 여부
+              <select name="isMulticultural">
+                <option value="">선택</option>
+                <option value="예">예</option>
+                <option value="아니오">아니오</option>
+              </select>
+            </label>
+            <label>
+              장애 여부
+              <select name="hasDisability">
+                <option value="">선택</option>
+                <option value="예">예</option>
+                <option value="아니오">아니오</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            현재 받고 있는 지원
+            <textarea name="currentSupport" rows="3" placeholder="예: 기초학력 지원, 상담치료, 복지지원"></textarea>
+          </label>
           <label>
             학생 이름
             <input type="text" name="studentName" required />

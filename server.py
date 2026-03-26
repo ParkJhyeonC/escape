@@ -46,6 +46,13 @@ def read_state() -> dict:
     state.setdefault("cases", [])
     state.setdefault("users", [])
 
+
+    for report in state["reports"]:
+        report.setdefault("familyType", "")
+        report.setdefault("isMulticultural", "")
+        report.setdefault("hasDisability", "")
+        report.setdefault("currentSupport", "")
+
     for case_item in state["cases"]:
         case_item.setdefault("departmentPlans", [])
         case_item.setdefault("updatedAt", case_item.get("createdAt", now_iso()))
@@ -332,6 +339,10 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 "grade": str(data["grade"]).strip(),
                 "classNumber": str(data["classNumber"]).strip(),
                 "studentName": str(data["studentName"]).strip(),
+                "familyType": str(data.get("familyType", "")).strip(),
+                "isMulticultural": str(data.get("isMulticultural", "")).strip(),
+                "hasDisability": str(data.get("hasDisability", "")).strip(),
+                "currentSupport": str(data.get("currentSupport", "")).strip(),
                 "issueType": str(data["issueType"]).strip(),
                 "teacherOpinion": str(data["teacherOpinion"]).strip(),
                 "createdAt": now_iso(),

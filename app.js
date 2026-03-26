@@ -139,6 +139,10 @@ function reportRowTemplate(report) {
     <li class="record-item">
       <p><strong>${escapeHtml(header)}</strong></p>
       <p>유형: ${escapeHtml(report.issueType)}</p>
+      <p>가족유형: ${escapeHtml(report.familyType || "미입력")}</p>
+      <p>다문화 여부: ${escapeHtml(report.isMulticultural || "미입력")}</p>
+      <p>장애 여부: ${escapeHtml(report.hasDisability || "미입력")}</p>
+      <p>현재 지원: ${escapeHtml(report.currentSupport || "미입력")}</p>
       <p>담임의견: ${escapeHtml(report.teacherOpinion)}</p>
       <p class="meta">접수: ${formatDate(report.createdAt)}</p>
       ${
@@ -210,7 +214,7 @@ function openPrintPreview(caseNumber) {
     `${report.grade}학년 ${report.classNumber}반 ${report.studentName}`,
   )}</p></div><div class="card"><h3>담임교사</h3><p>${escapeHtml(report.teacherName)}</p></div><div class="card"><h3>발견 유형</h3><p>${escapeHtml(
     report.issueType,
-  )}</p></div><div class="card"><h3>사례 생성일</h3><p>${formatDate(
+  )}</p></div><div class="card"><h3>가족유형/다문화/장애</h3><p>${escapeHtml(`${report.familyType || "미입력"} / ${report.isMulticultural || "미입력"} / ${report.hasDisability || "미입력"}`)}</p></div><div class="card"><h3>현재 지원</h3><p>${escapeHtml(report.currentSupport || "미입력")}</p></div><div class="card"><h3>사례 생성일</h3><p>${formatDate(
     caseItem.createdAt,
   )}</p></div></div></section><section class="section"><h2>담임교사 의견</h2><div class="card"><p>${escapeHtml(
     report.teacherOpinion,
@@ -354,6 +358,10 @@ function renderCaseWorkspace(caseData) {
   caseSummary.innerHTML = `
     <p><strong>학생:</strong> ${escapeHtml(`${caseData.report.grade}학년 ${caseData.report.classNumber}반 ${caseData.report.studentName}`)}</p>
     <p><strong>담임:</strong> ${escapeHtml(caseData.report.teacherName)}</p>
+    <p><strong>가족유형:</strong> ${escapeHtml(caseData.report.familyType || "미입력")}</p>
+    <p><strong>다문화 여부:</strong> ${escapeHtml(caseData.report.isMulticultural || "미입력")}</p>
+    <p><strong>장애 여부:</strong> ${escapeHtml(caseData.report.hasDisability || "미입력")}</p>
+    <p><strong>현재 지원:</strong> ${escapeHtml(caseData.report.currentSupport || "미입력")}</p>
     <p><strong>발견유형:</strong> ${escapeHtml(caseData.report.issueType)}</p>
     <p><strong>담임 의견:</strong> ${escapeHtml(caseData.report.teacherOpinion)}</p>
     <p><strong>현재 상태:</strong> ${escapeHtml(caseData.case.status)}</p>

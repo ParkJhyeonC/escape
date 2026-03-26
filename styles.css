@@ -120,6 +120,12 @@ button:hover {
   align-items: center;
 }
 
+.head-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .inline-form {
   display: flex;
   gap: 8px;
@@ -276,6 +282,11 @@ textarea:focus {
   .panel-head {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .head-actions {
+    width: 100%;
+    flex-direction: column;
   }
 
   .inline-form {
