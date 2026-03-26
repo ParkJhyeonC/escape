@@ -123,6 +123,21 @@ function setLoggedUserUI() {
   
 }
 
+
+function normalizeDepartmentLabel(department, authorName) {
+  const dep = (department || "").trim();
+  const author = (authorName || "").trim();
+  if (!dep || !author) {
+    return dep;
+  }
+
+  if (dep.endsWith(author)) {
+    return dep.slice(0, dep.length - author.length).trim() || dep;
+  }
+
+  return dep;
+}
+
 function escapeHtml(text) {
   return String(text)
     .replaceAll("&", "&amp;")
@@ -377,7 +392,7 @@ function renderCaseWorkspace(caseData) {
           const mine = plan.authorName === userSession?.name;
           return `
             <li class="record-item">
-              <p><strong>${escapeHtml(plan.department)}</strong> 작성자: ${escapeHtml(plan.authorName || "")}</p>
+              <p><strong>${escapeHtml(normalizeDepartmentLabel(plan.department, plan.authorName))}</strong> 작성자: ${escapeHtml(plan.authorName || "")}</p>
               <textarea class="edit-plan-input" data-note-id="${plan.id}" ${mine ? "" : "disabled"}>${escapeHtml(plan.plan)}</textarea>
               <p class="meta">수정: ${formatDate(plan.updatedAt || plan.createdAt)}</p>
               ${
@@ -557,6 +572,7 @@ departmentPlanForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
     const data = Object.fromEntries(new FormData(event.target).entries());
+    data.department = normalizeDepartmentLabel(data.department, userSession?.name || "");
     const result = await api("/api/case/note", { method: "POST", body: JSON.stringify(data) });
     renderCaseWorkspace(result);
     event.target.plan.value = "";
