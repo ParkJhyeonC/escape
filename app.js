@@ -8,9 +8,10 @@ const caseTitle = document.getElementById("case-title");
 const caseSummary = document.getElementById("case-summary");
 const departmentPlanList = document.getElementById("department-plan-list");
 const departmentPlanForm = document.getElementById("department-plan-form");
+const caseCodeForm = document.getElementById("case-code-form");
 
 let isAdminAuthenticated = false;
-let cachedState = { reports: [], cases: [] };
+let cachedState = { caseCode: "SI", reports: [], cases: [] };
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -50,6 +51,7 @@ function formatDate(isoText) {
 
 function reportRowTemplate(report) {
   const header = `${report.grade}학년 ${report.classNumber}반 ${report.studentName} / 담임 ${report.teacherName}`;
+  const suggestedCaseNumber = `${new Date().getFullYear()}-${cachedState.caseCode || "SI"}-`;
   return `
     <li class="record-item">
       <p><strong>${header}</strong></p>
@@ -59,7 +61,13 @@ function reportRowTemplate(report) {
       ${
         report.caseNumber
           ? `<p class="badge">사례번호 생성 완료: ${report.caseNumber}</p>`
-          : `<button class="primary create-case-button" data-report-id="${report.id}">사례번호 생성</button>`
+          : `
+            <label>
+              수동 사례번호 (선택)
+              <input class="manual-case-number" data-report-id="${report.id}" placeholder="${suggestedCaseNumber}001 또는 임의번호" />
+            </label>
+            <button class="primary create-case-button" data-report-id="${report.id}">사례번호 생성</button>
+          `
       }
     </li>
   `;
@@ -185,6 +193,8 @@ function openPrintPreview(caseNumber) {
 }
 
 function renderAdminDashboard() {
+  caseCodeForm.caseCode.value = cachedState.caseCode || "SI";
+
   reportQueue.innerHTML = cachedState.reports.length
     ? cachedState.reports.map((report) => reportRowTemplate(report)).join("")
     : '<li class="record-item">아직 접수된 제보가 없습니다.</li>';
@@ -201,9 +211,11 @@ function renderAdminDashboard() {
   reportQueue.querySelectorAll(".create-case-button").forEach((button) => {
     button.addEventListener("click", async () => {
       try {
+        const input = reportQueue.querySelector(`.manual-case-number[data-report-id="${button.dataset.reportId}"]`);
+        const manualCaseNumber = input ? input.value.trim() : "";
         const result = await api("/api/case/create", {
           method: "POST",
-          body: JSON.stringify({ reportId: button.dataset.reportId }),
+          body: JSON.stringify({ reportId: button.dataset.reportId, manualCaseNumber }),
         });
         cachedState = result.state;
         renderAdminDashboard();
@@ -406,6 +418,23 @@ document.getElementById("password-form").addEventListener("submit", async (event
 
     event.target.reset();
     showToast("관리자 비밀번호가 변경되었습니다.");
+  } catch (error) {
+    showToast(error.message, true);
+  }
+});
+
+caseCodeForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  try {
+    const payload = Object.fromEntries(new FormData(event.target).entries());
+    const result = await api("/api/case/config", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    cachedState = result.state;
+    renderAdminDashboard();
+    showToast(`사례번호 코드가 ${cachedState.caseCode}(으)로 변경되었습니다.`);
   } catch (error) {
     showToast(error.message, true);
   }

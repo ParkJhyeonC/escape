@@ -30,6 +30,7 @@ def now_iso() -> str:
 def default_state() -> dict:
     return {
         "adminPassword": "1234",
+        "caseCode": "SI",
         "reports": [],
         "cases": [],
     }
@@ -48,9 +49,9 @@ def write_state(state: dict) -> None:
         json.dump(state, file, ensure_ascii=False, indent=2)
 
 
-def generate_case_number(cases: list[dict]) -> str:
+def generate_case_number(cases: list[dict], case_code: str) -> str:
     year = datetime.now().year
-    pattern = re.compile(rf"^{year}-SI-(\d{{3}})$")
+    pattern = re.compile(rf"^{year}-{re.escape(case_code)}-(\d{{3}})$")
     seq = 1
 
     for case_item in cases:
@@ -58,7 +59,7 @@ def generate_case_number(cases: list[dict]) -> str:
         if matched:
             seq = max(seq, int(matched.group(1)) + 1)
 
-    return f"{year}-SI-{seq:03d}"
+    return f"{year}-{case_code}-{seq:03d}"
 
 
 def get_local_ip() -> str:
@@ -74,6 +75,7 @@ def get_local_ip() -> str:
 
 def normalize_state_for_client(state: dict) -> dict:
     return {
+        "caseCode": state.get("caseCode", "SI"),
         "reports": state["reports"],
         "cases": state["cases"],
     }
@@ -169,6 +171,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
         if self.path == "/api/case/create":
             report_id = str(data.get("reportId", "")).strip()
+            manual_case_number = str(data.get("manualCaseNumber", "")).strip().upper()
 
             with DB_LOCK:
                 state = read_state()
@@ -180,7 +183,15 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 if report["caseNumber"]:
                     return self.json_response(400, {"error": "이미 사례번호가 생성된 제보입니다."})
 
-                case_number = generate_case_number(state["cases"])
+                if manual_case_number:
+                    duplicate = next((item for item in state["cases"] if item["caseNumber"] == manual_case_number), None)
+                    if duplicate:
+                        return self.json_response(400, {"error": "이미 사용 중인 사례번호입니다."})
+                    case_number = manual_case_number
+                else:
+                    case_code = str(state.get("caseCode", "SI")).strip().upper() or "SI"
+                    case_number = generate_case_number(state["cases"], case_code)
+
                 case_item = {
                     "caseNumber": case_number,
                     "reportId": report_id,
@@ -195,6 +206,21 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 write_state(state)
 
             return self.json_response(201, {"case": case_item, "state": normalize_state_for_client(state)})
+
+        if self.path == "/api/case/config":
+            case_code = str(data.get("caseCode", "")).strip().upper()
+            if not case_code:
+                return self.json_response(400, {"error": "사례번호 코드를 입력해주세요."})
+
+            if not re.fullmatch(r"[A-Z0-9]{1,6}", case_code):
+                return self.json_response(400, {"error": "코드는 영문 대문자/숫자 1~6자리만 가능합니다."})
+
+            with DB_LOCK:
+                state = read_state()
+                state["caseCode"] = case_code
+                write_state(state)
+
+            return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
 
         if self.path == "/api/case/status":
             case_number = str(data.get("caseNumber", "")).strip().upper()

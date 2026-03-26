@@ -126,6 +126,15 @@
 
         <p class="subtitle-small">담임 제보를 검토해 사례번호를 생성하고, 처리 현황을 관리합니다.</p>
 
+        <h3>사례번호 규칙 설정</h3>
+        <form id="case-code-form" class="inline-form">
+          <label>
+            코드 (기본: SI)
+            <input type="text" name="caseCode" maxlength="6" placeholder="예: JD" required />
+          </label>
+          <button type="submit" class="ghost">코드 저장</button>
+        </form>
+
         <h3>신규 제보 접수함</h3>
         <ul id="report-queue" class="record-list"></ul>
 
