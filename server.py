@@ -4,6 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
+import hmac
 import http.server
 import json
 import os
@@ -18,10 +21,69 @@ from urllib.parse import unquote
 DB_FILE = Path("data.json")
 DB_LOCK = Lock()
 SESSIONS: dict[str, dict] = {}
+DATA_KEY_ENV = "ESCAPE_DATA_KEY"
 
 
 def now_iso() -> str:
     return datetime.now().isoformat(timespec="seconds")
+
+
+def get_data_key() -> str:
+    return os.environ.get(DATA_KEY_ENV, "").strip()
+
+
+def derive_key(passphrase: str, salt: bytes) -> bytes:
+    return hashlib.scrypt(passphrase.encode("utf-8"), salt=salt, n=2**14, r=8, p=1, dklen=32)
+
+
+def xor_stream(data: bytes, key: bytes, nonce: bytes) -> bytes:
+    output = bytearray(len(data))
+    counter = 0
+    offset = 0
+    while offset < len(data):
+        block = hashlib.sha256(key + nonce + counter.to_bytes(8, "big")).digest()
+        chunk = data[offset : offset + len(block)]
+        for idx, byte_value in enumerate(chunk):
+            output[offset + idx] = byte_value ^ block[idx]
+        offset += len(block)
+        counter += 1
+    return bytes(output)
+
+
+def encrypt_blob(plain_text: str, passphrase: str) -> str:
+    salt = secrets.token_bytes(16)
+    nonce = secrets.token_bytes(16)
+    key = derive_key(passphrase, salt)
+    cipher_bytes = xor_stream(plain_text.encode("utf-8"), key, nonce)
+    mac = hmac.new(key, nonce + cipher_bytes, hashlib.sha256).digest()
+    envelope = {
+        "v": 1,
+        "salt": base64.b64encode(salt).decode("ascii"),
+        "nonce": base64.b64encode(nonce).decode("ascii"),
+        "ct": base64.b64encode(cipher_bytes).decode("ascii"),
+        "mac": base64.b64encode(mac).decode("ascii"),
+    }
+    return json.dumps(envelope, ensure_ascii=False, indent=2)
+
+
+def decrypt_blob(cipher_text: str, passphrase: str) -> str:
+    payload = json.loads(cipher_text)
+    required_keys = {"v", "salt", "nonce", "ct", "mac"}
+    if not isinstance(payload, dict) or not required_keys.issubset(payload):
+        return cipher_text
+
+    salt = base64.b64decode(payload["salt"])
+    nonce = base64.b64decode(payload["nonce"])
+    cipher_bytes = base64.b64decode(payload["ct"])
+    mac = base64.b64decode(payload["mac"])
+
+    key = derive_key(passphrase, salt)
+    expected_mac = hmac.new(key, nonce + cipher_bytes, hashlib.sha256).digest()
+    if not hmac.compare_digest(mac, expected_mac):
+        raise ValueError("데이터 암호화 키가 올바르지 않거나 파일이 손상되었습니다.")
+
+    plain_bytes = xor_stream(cipher_bytes, key, nonce)
+    return plain_bytes.decode("utf-8")
 
 
 def default_state() -> dict:
@@ -39,7 +101,13 @@ def read_state() -> dict:
         return default_state()
 
     with DB_FILE.open("r", encoding="utf-8") as file:
-        state = json.load(file)
+        raw_text = file.read()
+
+    data_key = get_data_key()
+    if data_key:
+        raw_text = decrypt_blob(raw_text, data_key)
+
+    state = json.loads(raw_text)
 
     state.setdefault("caseCode", "SI")
     state.setdefault("reports", [])
@@ -76,8 +144,14 @@ def read_state() -> dict:
 
 
 def write_state(state: dict) -> None:
+    plain_text = json.dumps(state, ensure_ascii=False, indent=2)
+    data_key = get_data_key()
+
     with DB_FILE.open("w", encoding="utf-8") as file:
-        json.dump(state, file, ensure_ascii=False, indent=2)
+        if data_key:
+            file.write(encrypt_blob(plain_text, data_key))
+        else:
+            file.write(plain_text)
 
 
 def generate_case_number(cases: list[dict], case_code: str) -> str:
@@ -699,6 +773,7 @@ def run_server(port: int) -> None:
 
     print("=" * 64)
     print("학생맞춤통합지원 웹앱 서버가 실행되었습니다.")
+    print(f"- 데이터 암호화: {'ON' if get_data_key() else 'OFF'}")
     print(f"- 이 PC 접속 주소: http://localhost:{port}")
     print(f"- 인트라넷 접속 주소: http://{local_ip}:{port}")
     print("- 종료하려면 Ctrl + C 를 누르세요.")

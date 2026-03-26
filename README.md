@@ -48,3 +48,20 @@ netsh advfirewall firewall add rule name="StudentSupportWebApp_8000" dir=in acti
 ```bat
 start_webapp.bat 8080
 ```
+
+
+## 데이터 암호화(선택)
+- 환경변수 `ESCAPE_DATA_KEY`를 설정하고 서버를 실행하면 `data.json`이 암호화되어 저장됩니다.
+- 같은 키로만 복호화할 수 있으므로, 키를 잃어버리면 데이터 복구가 어렵습니다.
+
+예시(Windows CMD):
+```bat
+set ESCAPE_DATA_KEY=학교전용강력키
+start_webapp.bat
+```
+
+예시(PowerShell):
+```powershell
+$env:ESCAPE_DATA_KEY = "학교전용강력키"
+python server.py
+```
