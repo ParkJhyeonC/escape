@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>학생맞춤통합지원 협업 시스템</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <p class="eyebrow">Student-Centered Integrated Support</p>
+        <h1>학생맞춤통합지원 협업 시스템</h1>
+        <p class="subtitle">학생 발견부터 지원 방안 공유까지 하나의 흐름으로.</p>
+      </header>
+
+      <section id="user-login" class="panel" aria-live="polite">
+        <h2>교직원 로그인</h2>
+        <form id="user-login-form">
+          <label>
+            선생님 성함
+            <input type="text" name="name" required />
+          </label>
+          <label>
+            비밀번호
+            <input type="password" name="password" required />
+          </label>
+          <div class="panel-actions">
+            <button type="submit" class="primary">로그인</button>
+            <button type="button" class="ghost" id="show-reset">비밀번호 찾기</button>
+            <button type="button" class="ghost" data-target="admin-login">관리페이지</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="reset-password" class="panel hidden" aria-live="polite">
+        <h2>비밀번호 찾기 / 재설정</h2>
+        <form id="reset-password-form">
+          <label>
+            선생님 성함
+            <input type="text" name="name" required />
+          </label>
+          <label>
+            확인 답안
+            <input type="text" name="securityAnswer" required />
+          </label>
+          <label>
+            새 비밀번호
+            <input type="password" name="newPassword" minlength="4" required />
+          </label>
+          <div class="panel-actions">
+            <button type="submit" class="primary">비밀번호 재설정</button>
+            <button type="button" class="ghost" data-target="user-login">로그인으로</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="force-password" class="panel hidden" aria-live="polite">
+        <h2>최초 로그인 비밀번호 변경</h2>
+        <p class="subtitle-small">초기 비밀번호는 <strong>1234</strong>입니다. 보안을 위해 즉시 변경해주세요.</p>
+        <form id="user-password-form">
+          <label>
+            현재 비밀번호
+            <input type="password" name="currentPassword" required />
+          </label>
+          <label>
+            새 비밀번호
+            <input type="password" name="newPassword" minlength="4" required />
+          </label>
+          <label>
+            새 비밀번호 확인
+            <input type="password" name="confirmPassword" minlength="4" required />
+          </label>
+          <label>
+            비밀번호 찾기 확인 답안
+            <input type="text" name="securityAnswer" required />
+          </label>
+          <button type="submit" class="primary">비밀번호 변경 완료</button>
+        </form>
+      </section>
+
+
+      <section id="role-setup" class="panel hidden" aria-live="polite">
+        <h2>직책 정보 입력</h2>
+        <p class="subtitle-small">로그인 후 최초 1회 입력합니다.</p>
+        <form id="role-form">
+          <label>
+            직책
+            <select name="role" id="role-select" required>
+              <option value="">선택하세요</option>
+              <option value="담임교사">담임교사</option>
+              <option value="부장교사">부장교사</option>
+              <option value="직접입력">직접입력</option>
+            </select>
+          </label>
+
+          <div id="homeroom-fields" class="field-grid two hidden">
+            <label>
+              학년
+              <input type="number" name="homeroomGrade" min="1" max="6" />
+            </label>
+            <label>
+              반
+              <input type="number" name="homeroomClass" min="1" max="20" />
+            </label>
+          </div>
+
+          <div id="department-field" class="hidden">
+            <label>
+              부서
+              <input type="text" name="department" placeholder="예: 교무부장" />
+            </label>
+          </div>
+
+          <div id="custom-role-field" class="hidden">
+            <label>
+              직책 직접입력
+              <input type="text" name="customRole" placeholder="예: 교무부장" />
+            </label>
+          </div>
+
+          <button type="submit" class="primary">직책 정보 저장</button>
+        </form>
+      </section>
+
+      <section id="home" class="panel hidden" aria-label="메인 버튼">
+        <div class="panel-head">
+          <h2>메인</h2>
+          <div class="head-actions">
+            <button type="button" class="ghost" id="edit-role">직책정보 수정</button>
+            <button type="button" class="ghost" id="user-logout">로그아웃</button>
+          </div>
+        </div>
+        <p id="logged-user" class="subtitle-small"></p>
+        <div class="home-actions">
+          <button class="action-button" data-target="report">[👨‍🏫담임]학생 제보</button>
+          <button class="action-button" data-target="case-access">[🙋‍♀️각 부서]지원 방안 제시</button>
+        </div>
+      </section>
+
+      <section id="report" class="panel hidden" aria-live="polite">
+        <h2>학생 제보 페이지</h2>
+        <form id="report-form">
+          <label>
+            담임교사 성명
+            <input type="text" name="teacherName" readonly />
+          </label>
+          <div class="field-grid two">
+            <label>
+              학생 학년
+              <input type="number" min="1" max="6" name="grade" required />
+            </label>
+            <label>
+              학생 반
+              <input type="number" min="1" max="20" name="classNumber" required />
+            </label>
+          </div>
+
+          <label>
+            가족 유형
+            <input type="text" name="familyType" placeholder="예: 한부모, 조손, 다자녀, 일반" />
+          </label>
+          <div class="field-grid two">
+            <label>
+              다문화 여부
+              <select name="isMulticultural">
+                <option value="">선택</option>
+                <option value="예">예</option>
+                <option value="아니오">아니오</option>
+              </select>
+            </label>
+            <label>
+              장애 여부
+              <select name="hasDisability">
+                <option value="">선택</option>
+                <option value="예">예</option>
+                <option value="아니오">아니오</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            현재 받고 있는 지원
+            <textarea name="currentSupport" rows="3" placeholder="예: 기초학력 지원, 상담치료, 복지지원"></textarea>
+          </label>
+          <label>
+            학생 이름
+            <input type="text" name="studentName" required />
+          </label>
+          <label>
+            발견 유형
+            <select name="issueType" required>
+              <option value="">선택하세요</option>
+              <option>학업</option>
+              <option>출결</option>
+              <option>정서·행동</option>
+              <option>또래관계</option>
+              <option>학교폭력</option>
+              <option>자해·자살위험</option>
+              <option>가정·경제</option>
+              <option>건강</option>
+              <option>복합위기</option>
+            </select>
+          </label>
+          <label>
+            담임교사 의견(핵심 관찰)
+            <textarea name="teacherOpinion" rows="4" required></textarea>
+          </label>
+          <div class="panel-actions">
+            <button type="submit" class="primary">제보 저장</button>
+            <button type="button" class="ghost" data-target="home">메인으로</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="case-access" class="panel hidden" aria-live="polite">
+        <h2>사례번호 입력</h2>
+        <form id="case-form">
+          <label>
+            사례번호
+            <input type="text" name="caseNumber" placeholder="전달받은 사례번호를 입력해주세요 예: 2026-JH-123" required />
+          </label>
+          <label>
+            담당 부서
+            <input type="text" name="department" placeholder="예: Wee클래스 박재현" required />
+          </label>
+          <div class="panel-actions">
+            <button type="submit" class="primary">사례 열기</button>
+            <button type="button" class="ghost" data-target="home">메인으로</button>
+          </div>
+        </form>
+
+        <article id="case-workspace" class="workspace hidden">
+          <h3 id="case-title"></h3>
+          <div id="case-summary" class="summary-card"></div>
+
+          <h4>부서 지원방안 작성</h4>
+          <form id="department-plan-form">
+            <input type="hidden" name="caseNumber" />
+            <input type="hidden" name="department" />
+            <label>
+              각 부서가 맡은 사업을 기반으로 학생에 대한 지원방안을 작성해주세요
+              <textarea name="plan" rows="6" required></textarea>
+            </label>
+            <button type="submit" class="primary">지원방안 저장</button>
+          </form>
+
+          <h4>지원방안 공유</h4>
+          <ul id="department-plan-list" class="record-list"></ul>
+        </article>
+      </section>
+
+      <section id="admin-login" class="panel hidden" aria-live="polite">
+        <h2>관리자 인증</h2>
+        <form id="admin-login-form">
+          <label>
+            관리자 비밀번호
+            <input type="password" name="password" required />
+          </label>
+          <div class="panel-actions">
+            <button type="submit" class="primary">로그인</button>
+            <button type="button" class="ghost" data-target="user-login">로그인으로</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="admin" class="panel hidden" aria-live="polite">
+        <div class="panel-head">
+          <h2>관리자 대시보드</h2>
+          <button type="button" class="ghost" id="admin-logout">로그아웃</button>
+        </div>
+
+        <div class="admin-nav">
+          <button type="button" class="ghost admin-tab active" data-admin-view="reports">신규제보 접수함</button>
+          <button type="button" class="ghost admin-tab" data-admin-view="cases">사례관리</button>
+          <button type="button" class="ghost admin-tab" data-admin-view="users">교직원 계정관리</button>
+        </div>
+
+        <section id="admin-view-reports" class="admin-view">
+          <h3>사례번호 규칙 설정</h3>
+          <form id="case-code-form" class="inline-form">
+            <label>
+              코드 (기본: SI)
+              <input type="text" name="caseCode" maxlength="6" placeholder="예: JH" required />
+            </label>
+            <button type="submit" class="ghost">코드 저장</button>
+          </form>
+          <h3>신규 제보 접수함</h3>
+          <ul id="report-queue" class="record-list"></ul>
+        </section>
+
+        <section id="admin-view-cases" class="admin-view hidden">
+          <h3>사례 처리 현황</h3>
+          <ul id="case-dashboard" class="record-list"></ul>
+
+
+          <h3>데이터 암호화 설정</h3>
+          <p class="subtitle-small">관리자 페이지에서 저장 데이터 암호화 키를 변경/해제할 수 있습니다.</p>
+          <form id="encryption-form">
+            <label>
+              현재 암호화 키 (없으면 비워두기)
+              <input type="password" name="currentKey" />
+            </label>
+            <label>
+              새 암호화 키 (비우면 암호화 해제)
+              <input type="password" name="newKey" />
+            </label>
+            <button type="submit" class="ghost">암호화 설정 저장</button>
+          </form>
+
+          <h3>관리자 비밀번호 변경</h3>
+          <form id="admin-password-form">
+            <label>
+              현재 비밀번호
+              <input type="password" name="currentPassword" required />
+            </label>
+            <label>
+              새 비밀번호
+              <input type="password" name="newPassword" minlength="4" required />
+            </label>
+            <label>
+              새 비밀번호 확인
+              <input type="password" name="confirmPassword" minlength="4" required />
+            </label>
+            <button type="submit" class="primary">비밀번호 변경</button>
+          </form>
+        </section>
+
+        <section id="admin-view-users" class="admin-view hidden">
+          <h3>선생님 계정 등록</h3>
+          <p class="subtitle-small">초기 비밀번호는 <strong>1234</strong>이며, 최초 로그인 시 변경됩니다.</p>
+          <form id="teacher-create-form">
+            <label>
+              선생님 성함 목록 (한 줄에 1명)
+              <textarea name="namesText" rows="5" placeholder="김선생
+이선생
+박선생" required></textarea>
+            </label>
+            <button type="submit" class="primary">선생님 일괄 등록</button>
+          </form>
+
+          <h3>등록된 선생님</h3>
+          <ul id="teacher-list" class="record-list"></ul>
+        </section>
+      </section>
+
+      <p id="toast" class="toast" role="status" aria-live="polite"></p>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
