@@ -1,6 +1,5 @@
 :root {
   --bg: #080a11;
-  --panel: #0f1524;
   --text: #eef3ff;
   --muted: #8fa3cc;
   --primary: #6dc2ff;
@@ -28,8 +27,8 @@ body {
 }
 
 .app-shell {
-  width: min(760px, 100%);
-  background: rgba(15, 21, 36, 0.86);
+  width: min(900px, 100%);
+  background: rgba(15, 21, 36, 0.88);
   border: 1px solid var(--border);
   border-radius: 24px;
   backdrop-filter: blur(16px);
@@ -51,7 +50,9 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3,
+h4 {
   margin: 0;
 }
 
@@ -60,10 +61,22 @@ h1 {
   font-size: clamp(1.4rem, 3vw, 2rem);
 }
 
+h3 {
+  margin: 16px 0 8px;
+}
+
+h4 {
+  margin: 14px 0 8px;
+}
+
 .subtitle {
   margin: 10px 0 0;
   color: var(--muted);
-  line-height: 1.5;
+}
+
+.subtitle-small {
+  margin: 10px 0;
+  color: var(--muted);
 }
 
 .home-actions {
@@ -71,22 +84,25 @@ h1 {
   gap: 12px;
 }
 
-.action-button,
 button {
   border: 1px solid transparent;
   border-radius: 14px;
   background: #15203a;
   color: var(--text);
-  font-size: 1rem;
-  padding: 14px 16px;
+  font-size: 0.95rem;
+  padding: 12px 14px;
   cursor: pointer;
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
 }
 
-.action-button:hover,
 button:hover {
   transform: translateY(-1px);
   border-color: rgba(109, 194, 255, 0.5);
+}
+
+.action-button {
+  font-size: 1rem;
+  padding: 14px 16px;
 }
 
 .panel {
@@ -97,9 +113,11 @@ button:hover {
   background: rgba(7, 11, 23, 0.75);
 }
 
-.panel h2 {
-  margin-bottom: 12px;
-  font-size: 1.15rem;
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
 }
 
 label {
@@ -129,10 +147,23 @@ textarea:focus {
   border-color: transparent;
 }
 
+.field-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.field-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field-grid.compact {
+  margin: 8px 0;
+}
+
 .panel-actions {
   display: flex;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .primary {
@@ -144,6 +175,56 @@ textarea:focus {
 .ghost {
   border-color: var(--border);
   background: transparent;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(109, 194, 255, 0.18);
+}
+
+.workspace {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.summary-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 8px 0 12px;
+  background: rgba(19, 28, 49, 0.8);
+}
+
+.summary-card p {
+  margin: 4px 0;
+}
+
+.record-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.record-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(13, 21, 38, 0.86);
+}
+
+.record-item p {
+  margin: 4px 0;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .hidden {
@@ -158,4 +239,15 @@ textarea:focus {
 
 .toast.error {
   color: var(--danger);
+}
+
+@media (max-width: 700px) {
+  .field-grid.two {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

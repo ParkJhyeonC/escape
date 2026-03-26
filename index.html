@@ -11,9 +11,7 @@
       <header class="hero">
         <p class="eyebrow">Student-Centered Integrated Support</p>
         <h1>학생맞춤통합지원 협업 시스템</h1>
-        <p class="subtitle">
-          사례 발굴 → 접수 → 회의 → 지원 → 점검의 흐름을 학교 내에서 안전하게 연결합니다.
-        </p>
+        <p class="subtitle">사례 발굴 → 사례번호 생성 → 부서 지원방향 공유를 한 화면 흐름으로 연결합니다.</p>
       </header>
 
       <section id="home" class="home-actions" aria-label="메인 버튼">
@@ -25,6 +23,20 @@
       <section id="report" class="panel hidden" aria-live="polite">
         <h2>담임교사용 제보</h2>
         <form id="report-form">
+          <label>
+            담임교사 성명
+            <input type="text" name="teacherName" required />
+          </label>
+          <div class="field-grid two">
+            <label>
+              학생 학년
+              <input type="number" min="1" max="6" name="grade" required />
+            </label>
+            <label>
+              학생 반
+              <input type="number" min="1" max="20" name="classNumber" required />
+            </label>
+          </div>
           <label>
             학생 이름
             <input type="text" name="studentName" required />
@@ -45,8 +57,8 @@
             </select>
           </label>
           <label>
-            제보 내용
-            <textarea name="description" rows="4" required></textarea>
+            담임교사 의견(핵심 관찰)
+            <textarea name="teacherOpinion" rows="4" required></textarea>
           </label>
           <div class="panel-actions">
             <button type="submit" class="primary">제보 저장</button>
@@ -60,17 +72,36 @@
         <form id="case-form">
           <label>
             사례번호
-            <input type="text" name="caseNumber" placeholder="예: 2026-JD-001" required />
+            <input type="text" name="caseNumber" placeholder="예: 2026-SI-001" required />
           </label>
           <label>
             부서
             <input type="text" name="department" placeholder="예: 보건부" required />
           </label>
           <div class="panel-actions">
-            <button type="submit" class="primary">사례 접속</button>
+            <button type="submit" class="primary">사례 열기</button>
             <button type="button" class="ghost" data-back>홈으로</button>
           </div>
         </form>
+
+        <article id="case-workspace" class="workspace hidden">
+          <h3 id="case-title"></h3>
+          <div id="case-summary" class="summary-card"></div>
+
+          <h4>부서 지원방향 작성</h4>
+          <form id="department-plan-form">
+            <input type="hidden" name="caseNumber" />
+            <input type="hidden" name="department" />
+            <label>
+              지원방향
+              <textarea name="plan" rows="4" required></textarea>
+            </label>
+            <button type="submit" class="primary">지원방향 저장</button>
+          </form>
+
+          <h4>공유된 부서 지원방향</h4>
+          <ul id="department-plan-list" class="record-list"></ul>
+        </article>
       </section>
 
       <section id="admin-login" class="panel hidden" aria-live="polite">
@@ -88,8 +119,21 @@
       </section>
 
       <section id="admin" class="panel hidden" aria-live="polite">
-        <h2>관리자 설정</h2>
-        <p>초기 비밀번호는 <strong>1234</strong>이며, 아래에서 즉시 변경할 수 있습니다.</p>
+        <div class="panel-head">
+          <h2>관리자 대시보드</h2>
+          <button type="button" class="ghost" id="admin-logout">로그아웃</button>
+        </div>
+
+        <p class="subtitle-small">담임 제보를 검토해 사례번호를 생성하고, 처리 현황을 관리합니다.</p>
+
+        <h3>신규 제보 접수함</h3>
+        <ul id="report-queue" class="record-list"></ul>
+
+        <h3>사례 처리 현황</h3>
+        <ul id="case-dashboard" class="record-list"></ul>
+
+        <h3>관리자 비밀번호 변경</h3>
+        <p>초기 비밀번호는 <strong>1234</strong>입니다.</p>
         <form id="password-form">
           <label>
             현재 비밀번호
@@ -103,10 +147,7 @@
             새 비밀번호 확인
             <input type="password" name="confirmPassword" minlength="4" required />
           </label>
-          <div class="panel-actions">
-            <button type="submit" class="primary">비밀번호 변경</button>
-            <button type="button" class="ghost" id="admin-logout">로그아웃</button>
-          </div>
+          <button type="submit" class="primary">비밀번호 변경</button>
         </form>
       </section>
 
