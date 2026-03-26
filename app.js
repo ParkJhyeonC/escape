@@ -84,13 +84,19 @@ function caseRowTemplate(caseItem, report) {
       <p>${reportInfo}</p>
       <p>상태: <strong>${caseItem.status}</strong></p>
       <p>부서 의견 수: ${caseItem.departmentPlans.length}</p>
-      <div class="field-grid two compact">
-        <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="지원 진행 중">지원 진행 중</button>
-        <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="점검 단계">점검 단계</button>
-      </div>
-      <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="종결">종결</button>
-      <button class="ghost delete-btn" data-case-number="${caseItem.caseNumber}">사례 삭제</button>
-      <button class="primary print-btn" data-case-number="${caseItem.caseNumber}">예쁜 사례 출력</button>
+      ${
+        caseItem.isVirtual
+          ? '<p class="meta">사례 동기화 중입니다. 잠시 후 새로고침해주세요.</p>'
+          : `
+            <div class="field-grid two compact">
+              <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="지원 진행 중">지원 진행 중</button>
+              <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="점검 단계">점검 단계</button>
+            </div>
+            <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="종결">종결</button>
+            <button class="ghost delete-btn" data-case-number="${caseItem.caseNumber}">사례 삭제</button>
+            <button class="primary print-btn" data-case-number="${caseItem.caseNumber}">예쁜 사례 출력</button>
+          `
+      }
       <p class="meta">최근 수정: ${formatDate(caseItem.updatedAt)}</p>
     </li>
   `;
@@ -195,12 +201,31 @@ function openPrintPreview(caseNumber) {
 function renderAdminDashboard() {
   caseCodeForm.caseCode.value = cachedState.caseCode || "SI";
 
+  const linkedCaseDashboardItems = cachedState.reports
+    .filter((report) => report.caseNumber)
+    .map((report) => {
+      const realCase = cachedState.cases.find((item) => item.caseNumber === report.caseNumber);
+      if (realCase) {
+        return realCase;
+      }
+
+      return {
+        caseNumber: report.caseNumber,
+        reportId: report.id,
+        status: "지원 계획 수립",
+        departmentPlans: [],
+        updatedAt: report.createdAt,
+        isVirtual: true,
+      };
+    })
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+
   reportQueue.innerHTML = cachedState.reports.length
     ? cachedState.reports.map((report) => reportRowTemplate(report)).join("")
     : '<li class="record-item">아직 접수된 제보가 없습니다.</li>';
 
-  caseDashboard.innerHTML = cachedState.cases.length
-    ? cachedState.cases
+  caseDashboard.innerHTML = linkedCaseDashboardItems.length
+    ? linkedCaseDashboardItems
         .map((caseItem) => {
           const linkedReport = cachedState.reports.find((report) => report.id === caseItem.reportId);
           return caseRowTemplate(caseItem, linkedReport);
