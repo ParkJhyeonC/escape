@@ -69,6 +69,7 @@ function reportRowTemplate(report) {
             <button class="primary create-case-button" data-report-id="${report.id}">사례번호 생성</button>
           `
       }
+      <button class="ghost delete-report-btn" data-report-id="${report.id}">신규 제보 삭제</button>
     </li>
   `;
 }
@@ -245,6 +246,28 @@ function renderAdminDashboard() {
         cachedState = result.state;
         renderAdminDashboard();
         showToast(`사례번호 ${result.case.caseNumber}가 생성되었습니다.`);
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    });
+  });
+
+  reportQueue.querySelectorAll(".delete-report-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const reportId = button.dataset.reportId;
+      const shouldDelete = window.confirm("이 신규 제보를 삭제할까요? 연결된 사례도 함께 삭제됩니다.");
+      if (!shouldDelete) {
+        return;
+      }
+
+      try {
+        const result = await api("/api/report/delete", {
+          method: "POST",
+          body: JSON.stringify({ reportId }),
+        });
+        cachedState = result.state;
+        renderAdminDashboard();
+        showToast("신규 제보를 삭제했습니다.");
       } catch (error) {
         showToast(error.message, true);
       }
