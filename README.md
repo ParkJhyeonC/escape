@@ -33,3 +33,14 @@
 ```bat
 start_webapp.bat 8080
 ```
+
+
+## 방화벽 자동 허용
+- `start_webapp.bat` 실행 시, 같은 인트라넷 접속을 위해 **Windows 방화벽 인바운드 규칙(TCP 포트)**을 자동으로 등록하려고 시도합니다.
+- UAC(관리자 권한) 팝업이 뜨면 **허용**해야 외부 PC 접속(`http://서버PC_IP:포트`)이 가능합니다.
+- 팝업을 취소하면 서버는 실행되지만, 다른 PC에서 접속이 계속 차단될 수 있습니다.
+
+수동으로 열어야 할 때(관리자 CMD):
+```bat
+netsh advfirewall firewall add rule name="StudentSupportWebApp_8000" dir=in action=allow protocol=TCP localport=8000 profile=private,domain
+```
