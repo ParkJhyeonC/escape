@@ -14,6 +14,7 @@ const teacherList = document.getElementById("teacher-list");
 const roleSelect = document.getElementById("role-select");
 const homeroomFields = document.getElementById("homeroom-fields");
 const departmentField = document.getElementById("department-field");
+const customRoleField = document.getElementById("custom-role-field");
 
 let userSession = null;
 let adminSessionToken = "";
@@ -62,6 +63,23 @@ function formatDate(isoText) {
   return new Date(isoText).toLocaleString("ko-KR", { hour12: false });
 }
 
+
+function getRoleLabel(profile) {
+  if (!profile || !profile.role) {
+    return "직책 미입력";
+  }
+  if (profile.role === "담임교사") {
+    return `${profile.homeroomGrade}학년 ${profile.homeroomClass}반 담임교사`;
+  }
+  if (profile.role === "부장교사") {
+    return profile.department || "부장교사";
+  }
+  if (profile.role === "직접입력") {
+    return profile.customRole || "직접입력";
+  }
+  return profile.role;
+}
+
 function isProfileComplete(profile) {
   if (!profile || !profile.role) {
     return false;
@@ -72,14 +90,19 @@ function isProfileComplete(profile) {
   if (profile.role === "부장교사") {
     return Boolean(profile.department);
   }
+  if (profile.role === "직접입력") {
+    return Boolean(profile.customRole);
+  }
   return false;
 }
 
 function toggleRoleFields(role) {
   const isHomeroom = role === "담임교사";
   const isHead = role === "부장교사";
+  const isCustom = role === "직접입력";
   homeroomFields.classList.toggle("hidden", !isHomeroom);
   departmentField.classList.toggle("hidden", !isHead);
+  customRoleField.classList.toggle("hidden", !isCustom);
 }
 
 function setLoggedUserUI() {
@@ -92,17 +115,12 @@ function setLoggedUserUI() {
     return;
   }
 
-  const profileText = userSession.role
-    ? userSession.role === "담임교사"
-      ? `담임 ${userSession.homeroomGrade}학년 ${userSession.homeroomClass}반`
-      : `${userSession.department} / 부장교사`
-    : "직책 미입력";
+  const profileText = getRoleLabel(userSession);
 
   label.textContent = `로그인 사용자: ${userSession.name} (${profileText})`;
   reportForm.teacherName.value = userSession.name;
-  if (!caseForm.department.value.trim()) {
-    caseForm.department.value = userSession.role === "부장교사" ? userSession.department : `${userSession.name} 담당부서`;
-  }
+  caseForm.department.value = `${profileText} ${userSession.name}`;
+  
 }
 
 function escapeHtml(text) {
@@ -433,6 +451,7 @@ document.getElementById("user-login-form").addEventListener("submit", async (eve
       homeroomGrade: result.user.homeroomGrade || "",
       homeroomClass: result.user.homeroomClass || "",
       department: result.user.department || "",
+      customRole: result.user.customRole || "",
     };
     cachedState = { ...cachedState, ...result.state };
     event.target.reset();
@@ -445,8 +464,7 @@ document.getElementById("user-login-form").addEventListener("submit", async (eve
     }
 
     if (!isProfileComplete(userSession)) {
-      showPanel("role-setup");
-      toggleRoleFields(userSession.role);
+      openRoleSetup();
       showToast("직책 정보를 입력해주세요.");
       return;
     }
@@ -480,12 +498,16 @@ document.getElementById("user-password-form").addEventListener("submit", async (
     }
     await api("/api/user/password", { method: "POST", body: JSON.stringify(payload) });
     event.target.reset();
-    showPanel("role-setup");
-    toggleRoleFields(userSession?.role || "");
+    openRoleSetup();
     showToast("비밀번호 변경이 완료되었습니다. 직책 정보를 입력해주세요.");
   } catch (error) {
     showToast(error.message, true);
   }
+});
+
+document.getElementById("edit-role").addEventListener("click", () => {
+  openRoleSetup();
+  showToast("직책 정보를 수정할 수 있습니다.");
 });
 
 document.getElementById("user-logout").addEventListener("click", () => {
@@ -605,6 +627,21 @@ document.getElementById("teacher-create-form").addEventListener("submit", async 
 });
 
 
+
+function openRoleSetup() {
+  if (!userSession) {
+    return;
+  }
+  const roleForm = document.getElementById("role-form");
+  roleForm.role.value = userSession.role || "";
+  roleForm.homeroomGrade.value = userSession.homeroomGrade || "";
+  roleForm.homeroomClass.value = userSession.homeroomClass || "";
+  roleForm.department.value = userSession.department || "";
+  roleForm.customRole.value = userSession.customRole || "";
+  toggleRoleFields(roleForm.role.value);
+  showPanel("role-setup");
+}
+
 roleSelect.addEventListener("change", () => {
   toggleRoleFields(roleSelect.value);
 });
@@ -620,6 +657,7 @@ document.getElementById("role-form").addEventListener("submit", async (event) =>
       homeroomGrade: payload.role === "담임교사" ? payload.homeroomGrade : "",
       homeroomClass: payload.role === "담임교사" ? payload.homeroomClass : "",
       department: payload.role === "부장교사" ? payload.department : "",
+      customRole: payload.role === "직접입력" ? payload.customRole : "",
     };
     setLoggedUserUI();
     showPanel("home");

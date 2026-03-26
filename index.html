@@ -90,6 +90,7 @@
               <option value="">선택하세요</option>
               <option value="담임교사">담임교사</option>
               <option value="부장교사">부장교사</option>
+              <option value="직접입력">직접입력</option>
             </select>
           </label>
 
@@ -107,7 +108,14 @@
           <div id="department-field" class="hidden">
             <label>
               부서
-              <input type="text" name="department" placeholder="예: 생활지도부" />
+              <input type="text" name="department" placeholder="예: 교무부장" />
+            </label>
+          </div>
+
+          <div id="custom-role-field" class="hidden">
+            <label>
+              직책 직접입력
+              <input type="text" name="customRole" placeholder="예: 교무부장" />
             </label>
           </div>
 
@@ -121,6 +129,7 @@
           <button type="button" class="ghost" id="user-logout">로그아웃</button>
         </div>
         <p id="logged-user" class="subtitle-small"></p>
+        <button type="button" class="ghost" id="edit-role">직책정보 수정</button>
         <div class="home-actions">
           <button class="action-button" data-target="report">담임교사용 제보 버튼</button>
           <button class="action-button" data-target="case-access">각 부서 사례번호 입력 버튼</button>

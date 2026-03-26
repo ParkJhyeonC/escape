@@ -63,6 +63,7 @@ def read_state() -> dict:
         user.setdefault("homeroomGrade", "")
         user.setdefault("homeroomClass", "")
         user.setdefault("department", "")
+        user.setdefault("customRole", "")
 
     return state
 
@@ -112,6 +113,7 @@ def normalize_state_for_client(state: dict, include_users: bool = False) -> dict
                 "homeroomGrade": user.get("homeroomGrade", ""),
                 "homeroomClass": user.get("homeroomClass", ""),
                 "department": user.get("department", ""),
+                "customRole": user.get("customRole", ""),
             }
             for user in state["users"]
         ]
@@ -215,6 +217,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                         "homeroomGrade": user.get("homeroomGrade", ""),
                         "homeroomClass": user.get("homeroomClass", ""),
                         "department": user.get("department", ""),
+                "customRole": user.get("customRole", ""),
                     },
                     "state": normalize_state_for_client(state),
                 },
@@ -285,15 +288,19 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
             homeroom_grade = str(data.get("homeroomGrade", "")).strip()
             homeroom_class = str(data.get("homeroomClass", "")).strip()
             department = str(data.get("department", "")).strip()
+            custom_role = str(data.get("customRole", "")).strip()
 
-            if role not in {"담임교사", "부장교사"}:
-                return self.json_response(400, {"error": "직책은 담임교사 또는 부장교사만 가능합니다."})
+            if role not in {"담임교사", "부장교사", "직접입력"}:
+                return self.json_response(400, {"error": "직책은 담임교사, 부장교사, 직접입력 중에서 선택해주세요."})
 
             if role == "담임교사" and (not homeroom_grade or not homeroom_class):
                 return self.json_response(400, {"error": "담임교사는 학년과 반을 입력해주세요."})
 
             if role == "부장교사" and not department:
                 return self.json_response(400, {"error": "부장교사는 부서를 입력해주세요."})
+
+            if role == "직접입력" and not custom_role:
+                return self.json_response(400, {"error": "직접입력 직책명을 입력해주세요."})
 
             with DB_LOCK:
                 state = read_state()
@@ -305,6 +312,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 user["homeroomGrade"] = homeroom_grade if role == "담임교사" else ""
                 user["homeroomClass"] = homeroom_class if role == "담임교사" else ""
                 user["department"] = department if role == "부장교사" else ""
+                user["customRole"] = custom_role if role == "직접입력" else ""
                 write_state(state)
 
             return self.json_response(200, {"ok": True})
@@ -433,6 +441,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                             "homeroomGrade": "",
                             "homeroomClass": "",
                             "department": "",
+                            "customRole": "",
                         }
                     )
                     existing_names.add(name)
