@@ -9,6 +9,8 @@ const caseSummary = document.getElementById("case-summary");
 const departmentPlanList = document.getElementById("department-plan-list");
 const departmentPlanForm = document.getElementById("department-plan-form");
 const caseCodeForm = document.getElementById("case-code-form");
+const adminTabs = document.querySelectorAll(".admin-tab");
+const adminViews = document.querySelectorAll(".admin-view");
 
 let isAdminAuthenticated = false;
 let cachedState = { caseCode: "SI", reports: [], cases: [] };
@@ -43,6 +45,15 @@ function showPanel(panelId) {
   panels.forEach((panel) => panel.classList.add("hidden"));
   home.classList.add("hidden");
   document.getElementById(panelId).classList.remove("hidden");
+}
+
+function switchAdminView(viewName) {
+  adminTabs.forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.adminView === viewName);
+  });
+  adminViews.forEach((view) => {
+    view.classList.toggle("hidden", view.id !== `admin-view-${viewName}`);
+  });
 }
 
 function formatDate(isoText) {
@@ -441,6 +452,7 @@ document.getElementById("admin-login-form").addEventListener("submit", async (ev
     cachedState = result.state;
     event.target.reset();
     showPanel("admin");
+    switchAdminView("reports");
     renderAdminDashboard();
     showToast("관리자 대시보드에 진입했습니다.");
   } catch (error) {
@@ -492,6 +504,12 @@ document.getElementById("admin-logout").addEventListener("click", () => {
   isAdminAuthenticated = false;
   showHome();
   showToast("관리자 모드에서 로그아웃했습니다.");
+});
+
+adminTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    switchAdminView(tab.dataset.adminView);
+  });
 });
 
 refreshState().catch(() => {
