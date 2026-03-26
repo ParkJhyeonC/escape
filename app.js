@@ -377,7 +377,7 @@ function renderCaseWorkspace(caseData) {
           const mine = plan.authorName === userSession?.name;
           return `
             <li class="record-item">
-              <p><strong>${escapeHtml(plan.department)}</strong> · 작성자: ${escapeHtml(plan.authorName || "")}</p>
+              <p><strong>${escapeHtml(plan.department)}</strong> 작성자: ${escapeHtml(plan.authorName || "")}</p>
               <textarea class="edit-plan-input" data-note-id="${plan.id}" ${mine ? "" : "disabled"}>${escapeHtml(plan.plan)}</textarea>
               <p class="meta">수정: ${formatDate(plan.updatedAt || plan.createdAt)}</p>
               ${
