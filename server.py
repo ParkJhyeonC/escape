@@ -82,6 +82,12 @@ def normalize_state_for_client(state: dict) -> dict:
 
 
 class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
+    def cleaned_path(self) -> str:
+        path = self.path.split("?", 1)[0]
+        if path != "/" and path.endswith("/"):
+            path = path[:-1]
+        return path
+
     def json_response(self, status_code: int, payload: dict) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status_code)
@@ -96,13 +102,15 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
         return json.loads(raw_body or "{}")
 
     def do_GET(self) -> None:
-        if self.path == "/api/state":
+        path = self.cleaned_path()
+
+        if path == "/api/state":
             with DB_LOCK:
                 state = read_state()
             return self.json_response(200, {"state": normalize_state_for_client(state)})
 
-        if self.path.startswith("/api/case/"):
-            case_number = unquote(self.path.removeprefix("/api/case/")).strip().upper()
+        if path.startswith("/api/case/"):
+            case_number = unquote(path.removeprefix("/api/case/")).strip().upper()
             with DB_LOCK:
                 state = read_state()
                 case_item = next((item for item in state["cases"] if item["caseNumber"] == case_number), None)
@@ -116,12 +124,14 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self) -> None:
+        path = self.cleaned_path()
+
         try:
             data = self.parse_json_body()
         except json.JSONDecodeError:
             return self.json_response(400, {"error": "요청 본문이 올바른 JSON 형식이 아닙니다."})
 
-        if self.path == "/api/report":
+        if path == "/api/report":
             required = ["teacherName", "grade", "classNumber", "studentName", "issueType", "teacherOpinion"]
             if not all(data.get(field) for field in required):
                 return self.json_response(400, {"error": "필수 항목이 누락되었습니다."})
@@ -145,7 +155,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(201, {"report": report, "state": normalize_state_for_client(state)})
 
-        if self.path == "/api/admin/login":
+        if path == "/api/admin/login":
             with DB_LOCK:
                 state = read_state()
 
@@ -154,7 +164,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
 
-        if self.path == "/api/admin/password":
+        if path == "/api/admin/password":
             with DB_LOCK:
                 state = read_state()
 
@@ -169,7 +179,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(200, {"ok": True})
 
-        if self.path == "/api/case/create":
+        if path == "/api/case/create":
             report_id = str(data.get("reportId", "")).strip()
             manual_case_number = str(data.get("manualCaseNumber", "")).strip().upper()
 
@@ -207,7 +217,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(201, {"case": case_item, "state": normalize_state_for_client(state)})
 
-        if self.path == "/api/case/config":
+        if path == "/api/case/config":
             case_code = str(data.get("caseCode", "")).strip().upper()
             if not case_code:
                 return self.json_response(400, {"error": "사례번호 코드를 입력해주세요."})
@@ -222,7 +232,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
 
-        if self.path == "/api/case/status":
+        if path == "/api/case/status":
             case_number = str(data.get("caseNumber", "")).strip().upper()
             status = str(data.get("status", "")).strip()
 
@@ -242,7 +252,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
 
-        if self.path == "/api/case/delete":
+        if path == "/api/case/delete":
             case_number = str(data.get("caseNumber", "")).strip().upper()
             if not case_number:
                 return self.json_response(400, {"error": "삭제할 사례번호를 입력해주세요."})
@@ -271,7 +281,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
 
-        if self.path == "/api/case/note":
+        if path == "/api/case/note":
             case_number = str(data.get("caseNumber", "")).strip().upper()
             department = str(data.get("department", "")).strip()
             plan = str(data.get("plan", "")).strip()
@@ -300,7 +310,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(200, {"case": case_item, "report": report})
 
-        return self.json_response(404, {"error": "지원하지 않는 API 경로입니다."})
+        return self.json_response(404, {"error": f"지원하지 않는 API 경로입니다: {path}"})
 
 
 def parse_args() -> argparse.Namespace:
