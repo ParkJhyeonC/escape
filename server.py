@@ -59,6 +59,10 @@ def read_state() -> dict:
         user.setdefault("securityAnswer", "")
         user.setdefault("mustChangePassword", True)
         user.setdefault("createdAt", now_iso())
+        user.setdefault("role", "")
+        user.setdefault("homeroomGrade", "")
+        user.setdefault("homeroomClass", "")
+        user.setdefault("department", "")
 
     return state
 
@@ -104,6 +108,10 @@ def normalize_state_for_client(state: dict, include_users: bool = False) -> dict
                 "name": user["name"],
                 "mustChangePassword": bool(user.get("mustChangePassword", False)),
                 "createdAt": user.get("createdAt", ""),
+                "role": user.get("role", ""),
+                "homeroomGrade": user.get("homeroomGrade", ""),
+                "homeroomClass": user.get("homeroomClass", ""),
+                "department": user.get("department", ""),
             }
             for user in state["users"]
         ]
@@ -200,7 +208,14 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 {
                     "ok": True,
                     "token": token,
-                    "user": {"name": user["name"], "mustChangePassword": bool(user.get("mustChangePassword", False))},
+                    "user": {
+                        "name": user["name"],
+                        "mustChangePassword": bool(user.get("mustChangePassword", False)),
+                        "role": user.get("role", ""),
+                        "homeroomGrade": user.get("homeroomGrade", ""),
+                        "homeroomClass": user.get("homeroomClass", ""),
+                        "department": user.get("department", ""),
+                    },
                     "state": normalize_state_for_client(state),
                 },
             )
@@ -257,6 +272,39 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
                 user["password"] = new_password
                 user["mustChangePassword"] = False
+                write_state(state)
+
+            return self.json_response(200, {"ok": True})
+
+        if path == "/api/user/profile":
+            session = self.require_user()
+            if not session:
+                return
+
+            role = str(data.get("role", "")).strip()
+            homeroom_grade = str(data.get("homeroomGrade", "")).strip()
+            homeroom_class = str(data.get("homeroomClass", "")).strip()
+            department = str(data.get("department", "")).strip()
+
+            if role not in {"담임교사", "부장교사"}:
+                return self.json_response(400, {"error": "직책은 담임교사 또는 부장교사만 가능합니다."})
+
+            if role == "담임교사" and (not homeroom_grade or not homeroom_class):
+                return self.json_response(400, {"error": "담임교사는 학년과 반을 입력해주세요."})
+
+            if role == "부장교사" and not department:
+                return self.json_response(400, {"error": "부장교사는 부서를 입력해주세요."})
+
+            with DB_LOCK:
+                state = read_state()
+                user = next((item for item in state["users"] if item["name"] == session["name"]), None)
+                if not user:
+                    return self.json_response(404, {"error": "사용자 정보를 찾을 수 없습니다."})
+
+                user["role"] = role
+                user["homeroomGrade"] = homeroom_grade if role == "담임교사" else ""
+                user["homeroomClass"] = homeroom_class if role == "담임교사" else ""
+                user["department"] = department if role == "부장교사" else ""
                 write_state(state)
 
             return self.json_response(200, {"ok": True})
@@ -345,28 +393,62 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
             if not self.require_admin():
                 return
 
-            name = str(data.get("name", "")).strip()
             initial_password = str(data.get("initialPassword", "1234")).strip() or "1234"
-            if not name:
-                return self.json_response(400, {"error": "선생님 성함을 입력해주세요."})
+            names_text = str(data.get("namesText", "")).strip()
+            single_name = str(data.get("name", "")).strip()
+            raw_names = [line.strip() for line in names_text.replace(",", "\n").splitlines() if line.strip()]
+            if single_name:
+                raw_names.append(single_name)
+
+            unique_names = []
+            seen = set()
+            for name in raw_names:
+                if name not in seen:
+                    unique_names.append(name)
+                    seen.add(name)
+
+            if not unique_names:
+                return self.json_response(400, {"error": "등록할 선생님 성함을 한 줄에 한 명씩 입력해주세요."})
+
+            created_names = []
+            skipped_names = []
 
             with DB_LOCK:
                 state = read_state()
-                if next((item for item in state["users"] if item["name"] == name), None):
-                    return self.json_response(400, {"error": "이미 등록된 선생님입니다."})
+                existing_names = {item["name"] for item in state["users"]}
 
-                state["users"].append(
-                    {
-                        "name": name,
-                        "password": initial_password,
-                        "securityAnswer": "",
-                        "mustChangePassword": True,
-                        "createdAt": now_iso(),
-                    }
-                )
+                for name in unique_names:
+                    if name in existing_names:
+                        skipped_names.append(name)
+                        continue
+
+                    state["users"].append(
+                        {
+                            "name": name,
+                            "password": initial_password,
+                            "securityAnswer": "",
+                            "mustChangePassword": True,
+                            "createdAt": now_iso(),
+                            "role": "",
+                            "homeroomGrade": "",
+                            "homeroomClass": "",
+                            "department": "",
+                        }
+                    )
+                    existing_names.add(name)
+                    created_names.append(name)
+
                 write_state(state)
 
-            return self.json_response(201, {"ok": True, "state": normalize_state_for_client(state, include_users=True)})
+            return self.json_response(
+                201,
+                {
+                    "ok": True,
+                    "createdNames": created_names,
+                    "skippedNames": skipped_names,
+                    "state": normalize_state_for_client(state, include_users=True),
+                },
+            )
 
         if path == "/api/case/create":
             if not self.require_admin():

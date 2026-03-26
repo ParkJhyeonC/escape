@@ -79,6 +79,42 @@
         </form>
       </section>
 
+
+      <section id="role-setup" class="panel hidden" aria-live="polite">
+        <h2>직책 정보 입력</h2>
+        <p class="subtitle-small">로그인 후 최초 1회 입력합니다.</p>
+        <form id="role-form">
+          <label>
+            직책
+            <select name="role" id="role-select" required>
+              <option value="">선택하세요</option>
+              <option value="담임교사">담임교사</option>
+              <option value="부장교사">부장교사</option>
+            </select>
+          </label>
+
+          <div id="homeroom-fields" class="field-grid two hidden">
+            <label>
+              학년
+              <input type="number" name="homeroomGrade" min="1" max="6" />
+            </label>
+            <label>
+              반
+              <input type="number" name="homeroomClass" min="1" max="20" />
+            </label>
+          </div>
+
+          <div id="department-field" class="hidden">
+            <label>
+              부서
+              <input type="text" name="department" placeholder="예: 생활지도부" />
+            </label>
+          </div>
+
+          <button type="submit" class="primary">직책 정보 저장</button>
+        </form>
+      </section>
+
       <section id="home" class="panel hidden" aria-label="메인 버튼">
         <div class="panel-head">
           <h2>메인</h2>
@@ -241,10 +277,12 @@
           <p class="subtitle-small">초기 비밀번호는 <strong>1234</strong>이며, 최초 로그인 시 변경됩니다.</p>
           <form id="teacher-create-form">
             <label>
-              선생님 성함
-              <input type="text" name="name" required />
+              선생님 성함 목록 (한 줄에 1명)
+              <textarea name="namesText" rows="5" placeholder="김선생
+이선생
+박선생" required></textarea>
             </label>
-            <button type="submit" class="primary">선생님 등록</button>
+            <button type="submit" class="primary">선생님 일괄 등록</button>
           </form>
 
           <h3>등록된 선생님</h3>
