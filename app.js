@@ -81,9 +81,106 @@ function caseRowTemplate(caseItem, report) {
         <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="점검 단계">점검 단계</button>
       </div>
       <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="종결">종결</button>
+      <button class="primary print-btn" data-case-number="${caseItem.caseNumber}">예쁜 사례 출력</button>
       <p class="meta">최근 수정: ${formatDate(caseItem.updatedAt)}</p>
     </li>
   `;
+}
+
+function openPrintPreview(caseNumber) {
+  const caseItem = cachedState.cases.find((item) => item.caseNumber === caseNumber);
+  const report = cachedState.reports.find((item) => item.id === caseItem?.reportId);
+
+  if (!caseItem || !report) {
+    showToast("출력할 사례 데이터를 찾지 못했습니다.", true);
+    return;
+  }
+
+  const planItems = caseItem.departmentPlans.length
+    ? caseItem.departmentPlans
+        .map(
+          (plan) => `
+            <li>
+              <h4>${plan.department}</h4>
+              <p>${plan.plan}</p>
+              <small>${formatDate(plan.createdAt)}</small>
+            </li>
+          `,
+        )
+        .join("")
+    : "<li><p>등록된 부서 지원방향이 없습니다.</p></li>";
+
+  const html = `
+    <!doctype html>
+    <html lang="ko">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${caseItem.caseNumber} 사례 요약</title>
+        <style>
+          body { font-family: 'Pretendard', 'Malgun Gothic', sans-serif; margin: 0; background: #f3f6ff; color: #1f2b45; }
+          .sheet { max-width: 920px; margin: 30px auto; background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 18px 50px rgba(13,24,61,.16); }
+          .header { padding: 30px; background: linear-gradient(135deg, #2f5fff, #55b3ff); color: #fff; }
+          .header h1 { margin: 0 0 8px; font-size: 28px; }
+          .header p { margin: 0; opacity: .95; }
+          .section { padding: 24px 30px; border-top: 1px solid #e7ecff; }
+          .grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+          .card { background: #f8faff; border: 1px solid #dbe6ff; border-radius: 14px; padding: 12px; }
+          h2 { margin: 0 0 12px; font-size: 20px; color: #2440a8; }
+          h3 { margin: 0 0 8px; font-size: 15px; color: #3a4d85; }
+          ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+          li { border: 1px solid #dbe6ff; border-radius: 12px; padding: 12px; background: #fbfdff; }
+          li h4 { margin: 0 0 6px; color: #2746b8; }
+          li p { margin: 0 0 6px; line-height: 1.5; white-space: pre-wrap; }
+          small { color: #6d7dab; }
+          .stamp { margin-top: 14px; font-size: 13px; color: #576485; }
+          @media print {
+            body { background: #fff; }
+            .sheet { box-shadow: none; margin: 0; max-width: none; border-radius: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <article class="sheet">
+          <header class="header">
+            <h1>학생맞춤통합지원 사례 요약</h1>
+            <p>사례번호: ${caseItem.caseNumber} · 상태: ${caseItem.status}</p>
+          </header>
+
+          <section class="section">
+            <h2>기본 정보</h2>
+            <div class="grid">
+              <div class="card"><h3>학생</h3><p>${report.grade}학년 ${report.classNumber}반 ${report.studentName}</p></div>
+              <div class="card"><h3>담임교사</h3><p>${report.teacherName}</p></div>
+              <div class="card"><h3>발견 유형</h3><p>${report.issueType}</p></div>
+              <div class="card"><h3>사례 생성일</h3><p>${formatDate(caseItem.createdAt)}</p></div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>담임교사 의견</h2>
+            <div class="card"><p>${report.teacherOpinion}</p></div>
+          </section>
+
+          <section class="section">
+            <h2>부서별 지원 방향</h2>
+            <ul>${planItems}</ul>
+            <p class="stamp">출력 시각: ${formatDate(new Date().toISOString())}</p>
+          </section>
+        </article>
+        <script>window.onload = () => window.print();</script>
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open("", "_blank", "width=1024,height=900");
+  if (!printWindow) {
+    showToast("팝업 차단으로 출력 창을 열 수 없습니다.", true);
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
 }
 
 function renderAdminDashboard() {
@@ -132,6 +229,12 @@ function renderAdminDashboard() {
       } catch (error) {
         showToast(error.message, true);
       }
+    });
+  });
+
+  caseDashboard.querySelectorAll(".print-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      openPrintPreview(button.dataset.caseNumber);
     });
   });
 }
