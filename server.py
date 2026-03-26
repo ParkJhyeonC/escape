@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""학생맞춤통합지원 웹앱 서버.
-
-- 정적 파일 제공(index.html, app.js, styles.css)
-- 제보/사례/관리자 비밀번호를 파일 기반(JSON)으로 저장해
-  같은 인트라넷 사용자 간 협업 데이터 공유
-"""
+"""학생맞춤통합지원 웹앱 서버."""
 
 from __future__ import annotations
 
@@ -13,6 +8,7 @@ import http.server
 import json
 import os
 import re
+import secrets
 import socket
 from datetime import datetime
 from pathlib import Path
@@ -21,6 +17,7 @@ from urllib.parse import unquote
 
 DB_FILE = Path("data.json")
 DB_LOCK = Lock()
+SESSIONS: dict[str, dict] = {}
 
 
 def now_iso() -> str:
@@ -33,6 +30,7 @@ def default_state() -> dict:
         "caseCode": "SI",
         "reports": [],
         "cases": [],
+        "users": [],
     }
 
 
@@ -41,7 +39,28 @@ def read_state() -> dict:
         return default_state()
 
     with DB_FILE.open("r", encoding="utf-8") as file:
-        return json.load(file)
+        state = json.load(file)
+
+    state.setdefault("caseCode", "SI")
+    state.setdefault("reports", [])
+    state.setdefault("cases", [])
+    state.setdefault("users", [])
+
+    for case_item in state["cases"]:
+        case_item.setdefault("departmentPlans", [])
+        case_item.setdefault("updatedAt", case_item.get("createdAt", now_iso()))
+        for plan in case_item["departmentPlans"]:
+            plan.setdefault("id", f"N{int(datetime.now().timestamp() * 1000)}")
+            plan.setdefault("authorName", "알수없음")
+            plan.setdefault("updatedAt", plan.get("createdAt", now_iso()))
+
+    for user in state["users"]:
+        user.setdefault("password", "1234")
+        user.setdefault("securityAnswer", "")
+        user.setdefault("mustChangePassword", True)
+        user.setdefault("createdAt", now_iso())
+
+    return state
 
 
 def write_state(state: dict) -> None:
@@ -73,12 +92,22 @@ def get_local_ip() -> str:
         sock.close()
 
 
-def normalize_state_for_client(state: dict) -> dict:
-    return {
+def normalize_state_for_client(state: dict, include_users: bool = False) -> dict:
+    payload = {
         "caseCode": state.get("caseCode", "SI"),
         "reports": state["reports"],
         "cases": state["cases"],
     }
+    if include_users:
+        payload["users"] = [
+            {
+                "name": user["name"],
+                "mustChangePassword": bool(user.get("mustChangePassword", False)),
+                "createdAt": user.get("createdAt", ""),
+            }
+            for user in state["users"]
+        ]
+    return payload
 
 
 class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
@@ -100,6 +129,26 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
         content_length = int(self.headers.get("Content-Length", "0"))
         raw_body = self.rfile.read(content_length).decode("utf-8")
         return json.loads(raw_body or "{}")
+
+    def session_user(self) -> dict | None:
+        token = self.headers.get("X-Session-Token", "").strip()
+        if not token:
+            return None
+        return SESSIONS.get(token)
+
+    def require_user(self) -> dict | None:
+        session = self.session_user()
+        if not session or session.get("isAdmin"):
+            self.json_response(401, {"error": "로그인이 필요합니다."})
+            return None
+        return session
+
+    def require_admin(self) -> dict | None:
+        session = self.session_user()
+        if not session or not session.get("isAdmin"):
+            self.json_response(401, {"error": "관리자 인증이 필요합니다."})
+            return None
+        return session
 
     def do_GET(self) -> None:
         path = self.cleaned_path()
@@ -131,19 +180,95 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
         except json.JSONDecodeError:
             return self.json_response(400, {"error": "요청 본문이 올바른 JSON 형식이 아닙니다."})
 
+        if path == "/api/user/login":
+            name = str(data.get("name", "")).strip()
+            password = str(data.get("password", "")).strip()
+            if not name or not password:
+                return self.json_response(400, {"error": "성함과 비밀번호를 입력해주세요."})
+
+            with DB_LOCK:
+                state = read_state()
+                user = next((item for item in state["users"] if item["name"] == name), None)
+
+            if not user or user.get("password") != password:
+                return self.json_response(401, {"error": "로그인 정보가 올바르지 않습니다."})
+
+            token = secrets.token_hex(24)
+            SESSIONS[token] = {"name": user["name"], "isAdmin": False}
+            return self.json_response(
+                200,
+                {
+                    "ok": True,
+                    "token": token,
+                    "user": {"name": user["name"], "mustChangePassword": bool(user.get("mustChangePassword", False))},
+                    "state": normalize_state_for_client(state),
+                },
+            )
+
+        if path == "/api/user/password":
+            session = self.require_user()
+            if not session:
+                return
+
+            current_password = str(data.get("currentPassword", "")).strip()
+            new_password = str(data.get("newPassword", "")).strip()
+            if not new_password:
+                return self.json_response(400, {"error": "새 비밀번호를 입력해주세요."})
+
+            with DB_LOCK:
+                state = read_state()
+                user = next((item for item in state["users"] if item["name"] == session["name"]), None)
+                if not user:
+                    return self.json_response(404, {"error": "사용자 정보를 찾을 수 없습니다."})
+
+                if user.get("password") != current_password:
+                    return self.json_response(400, {"error": "현재 비밀번호가 일치하지 않습니다."})
+
+                user["password"] = new_password
+                user["mustChangePassword"] = False
+                write_state(state)
+
+            return self.json_response(200, {"ok": True})
+
+        if path == "/api/user/reset-password":
+            name = str(data.get("name", "")).strip()
+            security_answer = str(data.get("securityAnswer", "")).strip()
+            new_password = str(data.get("newPassword", "")).strip()
+            if not name or not security_answer or not new_password:
+                return self.json_response(400, {"error": "성함, 확인 답안, 새 비밀번호를 모두 입력해주세요."})
+
+            with DB_LOCK:
+                state = read_state()
+                user = next((item for item in state["users"] if item["name"] == name), None)
+                if not user:
+                    return self.json_response(404, {"error": "등록된 선생님 성함을 찾지 못했습니다."})
+
+                if user.get("securityAnswer", "") != security_answer:
+                    return self.json_response(400, {"error": "확인 답안이 일치하지 않습니다."})
+
+                user["password"] = new_password
+                user["mustChangePassword"] = False
+                write_state(state)
+
+            return self.json_response(200, {"ok": True})
+
         if path == "/api/report":
-            required = ["teacherName", "grade", "classNumber", "studentName", "issueType", "teacherOpinion"]
+            session = self.require_user()
+            if not session:
+                return
+
+            required = ["grade", "classNumber", "studentName", "issueType", "teacherOpinion"]
             if not all(data.get(field) for field in required):
                 return self.json_response(400, {"error": "필수 항목이 누락되었습니다."})
 
             report = {
                 "id": f"R{int(datetime.now().timestamp() * 1000)}",
-                "teacherName": data["teacherName"].strip(),
+                "teacherName": session["name"],
                 "grade": str(data["grade"]).strip(),
                 "classNumber": str(data["classNumber"]).strip(),
-                "studentName": data["studentName"].strip(),
-                "issueType": data["issueType"].strip(),
-                "teacherOpinion": data["teacherOpinion"].strip(),
+                "studentName": str(data["studentName"]).strip(),
+                "issueType": str(data["issueType"]).strip(),
+                "teacherOpinion": str(data["teacherOpinion"]).strip(),
                 "createdAt": now_iso(),
                 "caseNumber": None,
             }
@@ -156,6 +281,9 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
             return self.json_response(201, {"report": report, "state": normalize_state_for_client(state)})
 
         if path == "/api/report/delete":
+            if not self.require_admin():
+                return
+
             report_id = str(data.get("reportId", "")).strip()
             if not report_id:
                 return self.json_response(400, {"error": "삭제할 제보 ID가 필요합니다."})
@@ -182,9 +310,14 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
             if data.get("password") != state["adminPassword"]:
                 return self.json_response(401, {"error": "관리자 비밀번호가 올바르지 않습니다."})
 
-            return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
+            token = secrets.token_hex(24)
+            SESSIONS[token] = {"name": "관리자", "isAdmin": True}
+            return self.json_response(200, {"ok": True, "token": token, "state": normalize_state_for_client(state, include_users=True)})
 
         if path == "/api/admin/password":
+            if not self.require_admin():
+                return
+
             with DB_LOCK:
                 state = read_state()
 
@@ -199,7 +332,38 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(200, {"ok": True})
 
+        if path == "/api/admin/user/create":
+            if not self.require_admin():
+                return
+
+            name = str(data.get("name", "")).strip()
+            security_answer = str(data.get("securityAnswer", "")).strip()
+            initial_password = str(data.get("initialPassword", "1234")).strip() or "1234"
+            if not name or not security_answer:
+                return self.json_response(400, {"error": "선생님 성함과 확인 답안을 입력해주세요."})
+
+            with DB_LOCK:
+                state = read_state()
+                if next((item for item in state["users"] if item["name"] == name), None):
+                    return self.json_response(400, {"error": "이미 등록된 선생님입니다."})
+
+                state["users"].append(
+                    {
+                        "name": name,
+                        "password": initial_password,
+                        "securityAnswer": security_answer,
+                        "mustChangePassword": True,
+                        "createdAt": now_iso(),
+                    }
+                )
+                write_state(state)
+
+            return self.json_response(201, {"ok": True, "state": normalize_state_for_client(state, include_users=True)})
+
         if path == "/api/case/create":
+            if not self.require_admin():
+                return
+
             report_id = str(data.get("reportId", "")).strip()
             manual_case_number = str(data.get("manualCaseNumber", "")).strip().upper()
 
@@ -235,9 +399,12 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 report["caseNumber"] = case_number
                 write_state(state)
 
-            return self.json_response(201, {"case": case_item, "state": normalize_state_for_client(state)})
+            return self.json_response(201, {"case": case_item, "state": normalize_state_for_client(state, include_users=True)})
 
         if path == "/api/case/config":
+            if not self.require_admin():
+                return
+
             case_code = str(data.get("caseCode", "")).strip().upper()
             if not case_code:
                 return self.json_response(400, {"error": "사례번호 코드를 입력해주세요."})
@@ -250,9 +417,12 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 state["caseCode"] = case_code
                 write_state(state)
 
-            return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
+            return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state, include_users=True)})
 
         if path == "/api/case/status":
+            if not self.require_admin():
+                return
+
             case_number = str(data.get("caseNumber", "")).strip().upper()
             status = str(data.get("status", "")).strip()
 
@@ -270,9 +440,12 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 case_item["updatedAt"] = now_iso()
                 write_state(state)
 
-            return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
+            return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state, include_users=True)})
 
         if path == "/api/case/delete":
+            if not self.require_admin():
+                return
+
             case_number = str(data.get("caseNumber", "")).strip().upper()
             if not case_number:
                 return self.json_response(400, {"error": "삭제할 사례번호를 입력해주세요."})
@@ -299,9 +472,13 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 del state["cases"][case_index]
                 write_state(state)
 
-            return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
+            return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state, include_users=True)})
 
         if path == "/api/case/note":
+            session = self.require_user()
+            if not session:
+                return
+
             case_number = str(data.get("caseNumber", "")).strip().upper()
             department = str(data.get("department", "")).strip()
             plan = str(data.get("plan", "")).strip()
@@ -318,11 +495,78 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 case_item["departmentPlans"].insert(
                     0,
                     {
+                        "id": f"N{int(datetime.now().timestamp() * 1000)}",
                         "department": department,
                         "plan": plan,
+                        "authorName": session["name"],
                         "createdAt": now_iso(),
+                        "updatedAt": now_iso(),
                     },
                 )
+                case_item["updatedAt"] = now_iso()
+
+                report = next((item for item in state["reports"] if item["id"] == case_item["reportId"]), None)
+                write_state(state)
+
+            return self.json_response(200, {"case": case_item, "report": report})
+
+        if path == "/api/case/note/update":
+            session = self.require_user()
+            if not session:
+                return
+
+            case_number = str(data.get("caseNumber", "")).strip().upper()
+            note_id = str(data.get("noteId", "")).strip()
+            plan_text = str(data.get("plan", "")).strip()
+            if not case_number or not note_id or not plan_text:
+                return self.json_response(400, {"error": "사례번호, 항목, 지원방향을 모두 입력해주세요."})
+
+            with DB_LOCK:
+                state = read_state()
+                case_item = next((item for item in state["cases"] if item["caseNumber"] == case_number), None)
+                if not case_item:
+                    return self.json_response(404, {"error": "해당 사례를 찾을 수 없습니다."})
+
+                note = next((item for item in case_item["departmentPlans"] if item.get("id") == note_id), None)
+                if not note:
+                    return self.json_response(404, {"error": "수정할 지원방향을 찾지 못했습니다."})
+
+                if note.get("authorName") != session["name"]:
+                    return self.json_response(403, {"error": "작성자 본인만 수정할 수 있습니다."})
+
+                note["plan"] = plan_text
+                note["updatedAt"] = now_iso()
+                case_item["updatedAt"] = now_iso()
+
+                report = next((item for item in state["reports"] if item["id"] == case_item["reportId"]), None)
+                write_state(state)
+
+            return self.json_response(200, {"case": case_item, "report": report})
+
+        if path == "/api/case/note/delete":
+            session = self.require_user()
+            if not session:
+                return
+
+            case_number = str(data.get("caseNumber", "")).strip().upper()
+            note_id = str(data.get("noteId", "")).strip()
+            if not case_number or not note_id:
+                return self.json_response(400, {"error": "사례번호와 삭제할 항목이 필요합니다."})
+
+            with DB_LOCK:
+                state = read_state()
+                case_item = next((item for item in state["cases"] if item["caseNumber"] == case_number), None)
+                if not case_item:
+                    return self.json_response(404, {"error": "해당 사례를 찾을 수 없습니다."})
+
+                note = next((item for item in case_item["departmentPlans"] if item.get("id") == note_id), None)
+                if not note:
+                    return self.json_response(404, {"error": "삭제할 지원방향을 찾지 못했습니다."})
+
+                if note.get("authorName") != session["name"]:
+                    return self.json_response(403, {"error": "작성자 본인만 삭제할 수 있습니다."})
+
+                case_item["departmentPlans"] = [item for item in case_item["departmentPlans"] if item.get("id") != note_id]
                 case_item["updatedAt"] = now_iso()
 
                 report = next((item for item in state["reports"] if item["id"] == case_item["reportId"]), None)
