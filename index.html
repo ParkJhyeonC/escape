@@ -11,7 +11,7 @@
       <header class="hero">
         <p class="eyebrow">Student-Centered Integrated Support</p>
         <h1>학생맞춤통합지원 협업 시스템</h1>
-        <p class="subtitle">로그인 기반으로 제보·사례 협업을 운영합니다.</p>
+        <p class="subtitle">학생 발견부터 지원 방안 공유까지 하나의 흐름으로.</p>
       </header>
 
       <section id="user-login" class="panel" aria-live="polite">
@@ -28,7 +28,7 @@
           <div class="panel-actions">
             <button type="submit" class="primary">로그인</button>
             <button type="button" class="ghost" id="show-reset">비밀번호 찾기</button>
-            <button type="button" class="ghost" data-target="admin-login">관리자 버튼</button>
+            <button type="button" class="ghost" data-target="admin-login">관리페이지</button>
           </div>
         </form>
       </section>
@@ -133,13 +133,13 @@
         </div>
         <p id="logged-user" class="subtitle-small"></p>
         <div class="home-actions">
-          <button class="action-button" data-target="report">담임교사용 제보 버튼</button>
-          <button class="action-button" data-target="case-access">각 부서 사례번호 입력 버튼</button>
+          <button class="action-button" data-target="report">[👨‍🏫담임]학생 제보</button>
+          <button class="action-button" data-target="case-access">[🙋‍♀️각 부서]지원 방안 제시</button>
         </div>
       </section>
 
       <section id="report" class="panel hidden" aria-live="polite">
-        <h2>담임교사용 제보</h2>
+        <h2>학생 제보 페이지</h2>
         <form id="report-form">
           <label>
             담임교사 성명
@@ -213,15 +213,15 @@
       </section>
 
       <section id="case-access" class="panel hidden" aria-live="polite">
-        <h2>각 부서 사례번호 입력</h2>
+        <h2>사례번호 입력</h2>
         <form id="case-form">
           <label>
             사례번호
-            <input type="text" name="caseNumber" placeholder="예: 2026-SI-001" required />
+            <input type="text" name="caseNumber" placeholder="전달받은 사례번호를 입력해주세요 예: 2026-JH-123" required />
           </label>
           <label>
             담당 부서
-            <input type="text" name="department" placeholder="예: 보건부" required />
+            <input type="text" name="department" placeholder="예: Wee클래스 박재현" required />
           </label>
           <div class="panel-actions">
             <button type="submit" class="primary">사례 열기</button>
@@ -233,18 +233,18 @@
           <h3 id="case-title"></h3>
           <div id="case-summary" class="summary-card"></div>
 
-          <h4>부서 지원방향 작성</h4>
+          <h4>부서 지원방안 작성</h4>
           <form id="department-plan-form">
             <input type="hidden" name="caseNumber" />
             <input type="hidden" name="department" />
             <label>
-              지원방향
-              <textarea name="plan" rows="4" required></textarea>
+              각 부서가 맡은 사업을 기반으로 학생에 대한 지원방안을 작성해주세요
+              <textarea name="plan" rows="6" required></textarea>
             </label>
-            <button type="submit" class="primary">지원방향 저장</button>
+            <button type="submit" class="primary">지원방안 저장</button>
           </form>
 
-          <h4>공유된 부서 지원방향</h4>
+          <h4>지원방안 공유</h4>
           <ul id="department-plan-list" class="record-list"></ul>
         </article>
       </section>
@@ -280,7 +280,7 @@
           <form id="case-code-form" class="inline-form">
             <label>
               코드 (기본: SI)
-              <input type="text" name="caseCode" maxlength="6" placeholder="예: JD" required />
+              <input type="text" name="caseCode" maxlength="6" placeholder="예: JH" required />
             </label>
             <button type="submit" class="ghost">코드 저장</button>
           </form>
