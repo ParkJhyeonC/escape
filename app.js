@@ -81,6 +81,7 @@ function caseRowTemplate(caseItem, report) {
         <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="점검 단계">점검 단계</button>
       </div>
       <button class="ghost status-btn" data-case-number="${caseItem.caseNumber}" data-status="종결">종결</button>
+      <button class="ghost delete-btn" data-case-number="${caseItem.caseNumber}">사례 삭제</button>
       <button class="primary print-btn" data-case-number="${caseItem.caseNumber}">예쁜 사례 출력</button>
       <p class="meta">최근 수정: ${formatDate(caseItem.updatedAt)}</p>
     </li>
@@ -235,6 +236,29 @@ function renderAdminDashboard() {
   caseDashboard.querySelectorAll(".print-btn").forEach((button) => {
     button.addEventListener("click", () => {
       openPrintPreview(button.dataset.caseNumber);
+    });
+  });
+
+  caseDashboard.querySelectorAll(".delete-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const caseNumber = button.dataset.caseNumber;
+      const shouldDelete = window.confirm(`${caseNumber} 사례를 삭제할까요?`);
+
+      if (!shouldDelete) {
+        return;
+      }
+
+      try {
+        const result = await api("/api/case/delete", {
+          method: "POST",
+          body: JSON.stringify({ caseNumber }),
+        });
+        cachedState = result.state;
+        renderAdminDashboard();
+        showToast(`${caseNumber} 사례를 삭제했습니다.`);
+      } catch (error) {
+        showToast(error.message, true);
+      }
     });
   });
 }

@@ -216,6 +216,35 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
 
             return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
 
+        if self.path == "/api/case/delete":
+            case_number = str(data.get("caseNumber", "")).strip().upper()
+            if not case_number:
+                return self.json_response(400, {"error": "삭제할 사례번호를 입력해주세요."})
+
+            with DB_LOCK:
+                state = read_state()
+                case_index = next(
+                    (index for index, item in enumerate(state["cases"]) if item["caseNumber"] == case_number),
+                    None,
+                )
+
+                if case_index is None:
+                    return self.json_response(404, {"error": "삭제할 사례를 찾을 수 없습니다."})
+
+                target_case = state["cases"][case_index]
+                linked_report = next(
+                    (item for item in state["reports"] if item["id"] == target_case["reportId"]),
+                    None,
+                )
+
+                if linked_report:
+                    linked_report["caseNumber"] = None
+
+                del state["cases"][case_index]
+                write_state(state)
+
+            return self.json_response(200, {"ok": True, "state": normalize_state_for_client(state)})
+
         if self.path == "/api/case/note":
             case_number = str(data.get("caseNumber", "")).strip().upper()
             department = str(data.get("department", "")).strip()
