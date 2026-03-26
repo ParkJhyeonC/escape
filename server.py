@@ -224,7 +224,13 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 if user.get("password") != current_password:
                     return self.json_response(400, {"error": "현재 비밀번호가 일치하지 않습니다."})
 
+                security_answer = str(data.get("securityAnswer", "")).strip()
+                if user.get("mustChangePassword") and not security_answer:
+                    return self.json_response(400, {"error": "최초 변경 시 비밀번호 찾기 확인 답안을 입력해주세요."})
+
                 user["password"] = new_password
+                if security_answer:
+                    user["securityAnswer"] = security_answer
                 user["mustChangePassword"] = False
                 write_state(state)
 
@@ -242,6 +248,9 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 user = next((item for item in state["users"] if item["name"] == name), None)
                 if not user:
                     return self.json_response(404, {"error": "등록된 선생님 성함을 찾지 못했습니다."})
+
+                if not user.get("securityAnswer", ""):
+                    return self.json_response(400, {"error": "아직 확인 답안이 설정되지 않았습니다. 최초 로그인 후 비밀번호를 변경해주세요."})
 
                 if user.get("securityAnswer", "") != security_answer:
                     return self.json_response(400, {"error": "확인 답안이 일치하지 않습니다."})
@@ -337,10 +346,9 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             name = str(data.get("name", "")).strip()
-            security_answer = str(data.get("securityAnswer", "")).strip()
             initial_password = str(data.get("initialPassword", "1234")).strip() or "1234"
-            if not name or not security_answer:
-                return self.json_response(400, {"error": "선생님 성함과 확인 답안을 입력해주세요."})
+            if not name:
+                return self.json_response(400, {"error": "선생님 성함을 입력해주세요."})
 
             with DB_LOCK:
                 state = read_state()
@@ -351,7 +359,7 @@ class StudentSupportHandler(http.server.SimpleHTTPRequestHandler):
                     {
                         "name": name,
                         "password": initial_password,
-                        "securityAnswer": security_answer,
+                        "securityAnswer": "",
                         "mustChangePassword": True,
                         "createdAt": now_iso(),
                     }

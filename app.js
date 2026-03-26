@@ -554,7 +554,7 @@ document.getElementById("teacher-create-form").addEventListener("submit", async 
     cachedState = { ...cachedState, ...result.state };
     event.target.reset();
     renderAdminDashboard();
-    showToast(`${payload.name} 선생님 계정을 등록했습니다. 초기 비밀번호는 1234입니다.`);
+    showToast(`${payload.name} 선생님 계정을 등록했습니다. 최초 로그인 시 비밀번호와 확인 답안을 설정하세요.`);
   } catch (error) {
     showToast(error.message, true);
   }
